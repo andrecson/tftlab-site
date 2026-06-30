@@ -1,0 +1,655 @@
+{
+  "project": "MetaComps",
+  "branchName": "ralph/tft-comps-tierlist",
+  "description": "Site de tier lists de composicoes de TFT (Next.js App Router + Tailwind + Prisma/Postgres). Tier list publica (SSG/ISR) com filtros e badges Novo/Atualizado, paginas de detalhe por comp (traits, carries, itens, board, augments, guia Quando jogar / Como jogar), um Builder de times compartilhado (publico, 'Abrir no Builder' e editor da comp no admin) e painel admin proprio para curadoria por patch. Identidade visual baseada no tftlab.com.br (tema dark slate + acento ciano).",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Scaffold do projeto Next.js + Tailwind",
+      "description": "As a developer, I want a Next.js App Router (TypeScript) project with Tailwind so that there is a foundation to build on.",
+      "acceptanceCriteria": [
+        "Projeto Next.js (App Router, TypeScript, ESLint) criado com src/app",
+        "Tailwind CSS instalado e configurado (globals.css com diretivas base/components/utilities)",
+        "Pagina inicial padrao renderiza em http://localhost:3000",
+        "Scripts package.json: dev, build, start, lint, typecheck",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Aplicar tema de cores do tftlab.com.br (tokens shadcn)",
+      "description": "As a user, I want the dark slate + cyan theme so that the site matches the desired tftlab identity.",
+      "acceptanceCriteria": [
+        "globals.css define variaveis CSS HSL: --background 224 71% 4%, --foreground 213 31% 91%, --primary 180 100% 42.5%, --muted/--border 217.2 32.6% 17.5%, --secondary 175 60% 20%, --ring 180 100% 42.5%, --radius 0.5rem",
+        "Variaveis de tier definidas: --tier-s, --tier-a, --tier-b, --tier-c, --tier-x",
+        "tailwind.config mapeia colors (background, foreground, card, primary, secondary, muted, accent, destructive, border, input, ring, tier.{s,a,b,c,x}) e backgroundImage brand-gradient (#9333EA->#5EEAD4)",
+        "body usa bg-background text-foreground; pagina inicial aparece dark com texto claro",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Configurar Prisma + Postgres + PrismaClient singleton",
+      "description": "As a developer, I want Prisma wired to Postgres so that models can be persisted.",
+      "acceptanceCriteria": [
+        "Prisma instalado; schema.prisma com datasource postgresql usando env(DATABASE_URL) e generator prisma-client-js",
+        ".env.example com DATABASE_URL",
+        "src/server/db.ts exporta PrismaClient singleton (reuso em dev/hot-reload)",
+        "npx prisma generate executa sem erro",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Schema: modelos de catalogo (Champion, Item, Trait, Augment)",
+      "description": "As a developer, I want catalog models so that comps and the builder can reference champions, items, traits and augments.",
+      "acceptanceCriteria": [
+        "Modelos Champion (apiId, name, cost, iconUrl, set), Item (apiId, name, iconUrl, type, set), Trait (apiId, name, iconUrl, set, breakpoints Json), Augment (apiId, name, iconUrl, set, tier?)",
+        "Modelo de juncao ChampionTrait (championId, traitId)",
+        "Enum ItemType (COMPONENT, COMPLETED, ARTIFACT, RADIANT, EMBLEM, SUPPORT, OTHER)",
+        "Unicidade @@unique([apiId, set]) em Champion/Item/Trait/Augment; indices por set",
+        "Migration gerada e aplicada com npx prisma migrate dev sem erro",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Schema: modelos Patch e SiteConfig",
+      "description": "As a developer, I want Patch and a singleton SiteConfig so that 'current patch/set' is known globally.",
+      "acceptanceCriteria": [
+        "Modelo Patch (version unique, set, releasedAt, createdAt)",
+        "Modelo SiteConfig singleton (id default 1, currentSet, currentPatch relation, updatedAt)",
+        "Migration gerada e aplicada sem erro",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Schema: modelo Comp + enums + relacao com Patch",
+      "description": "As a developer, I want the Comp model so that compositions can be stored.",
+      "acceptanceCriteria": [
+        "Enums Tier (S,A,B,C,X), CompStatus (DRAFT,PUBLISHED,ARCHIVED), Difficulty (EASY,MEDIUM,HARD), AugmentCategory (ECON,ITEMS,COMBAT)",
+        "Modelo Comp com slug unique, name, set, tier, situational, status, playstyle?, difficulty, whenToPlay? (Quando jogar), earlyGame? (Inicio de jogo), midGame? (Meio jogo), lateGame? (Fim de jogo), tips?, augmentPriority AugmentCategory[], timestamps, publishedAt?",
+        "Relacoes patchIntroduced (obrigatoria) e patchUpdated (opcional) para Patch",
+        "Indices @@index([set, status, tier]) e @@index([status])",
+        "Migration gerada e aplicada sem erro",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Schema: tabelas de juncao da Comp",
+      "description": "As a developer, I want comp join tables so that traits, units, items, augments and tier history are linked.",
+      "acceptanceCriteria": [
+        "Enum UnitRole (EARLY, CORE, FLEX)",
+        "CompTrait (compId, traitId, level, order) com @@unique([compId, traitId])",
+        "CompUnit (compId, championId, role, isCarry, carryOrder?, starLevel?, boardRow?, boardCol?, order) com @@unique([compId, boardRow, boardCol])",
+        "CompUnitItem (compUnitId, itemId, order) e CompItemPriority (compId, itemId, order)",
+        "CompAugment (compId, augmentId, order) e CompTierSnapshot (compId, patchId, tier) com @@unique([compId, patchId])",
+        "onDelete: Cascade nos filhos de Comp/CompUnit",
+        "Migration gerada e aplicada sem erro",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Schema: modelo User para o admin",
+      "description": "As a developer, I want a User model so that the admin can authenticate.",
+      "acceptanceCriteria": [
+        "Enum UserRole (ADMIN, EDITOR)",
+        "Modelo User (id, email unique, name?, role default EDITOR, passwordHash?, createdAt)",
+        "Migration gerada e aplicada sem erro",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Seed: importar catalogo do Data Dragon (idempotente)",
+      "description": "As a curator, I want the champion/item/trait/augment catalog imported so that comps and the builder use real game data.",
+      "acceptanceCriteria": [
+        "src/server/ddragon.ts busca dados do set atual no Data Dragon",
+        "prisma/seed.ts faz upsert por apiId+set em Champion/Item/Trait/Augment e popula ChampionTrait",
+        "Trait.breakpoints e Champion.cost preenchidos (necessarios ao motor de sinergias e ao builder)",
+        "Rodar duas vezes nao duplica registros (idempotente)",
+        "npx prisma db seed completa sem erro e tabelas de catalogo ficam com contagem > 0",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Seed: patch atual, SiteConfig e comps de exemplo",
+      "description": "As a developer, I want a current patch and sample published comps so that the public UI has data to render and verify.",
+      "acceptanceCriteria": [
+        "Seed cria/atualiza um Patch atual e o SiteConfig (currentSet, currentPatch)",
+        "Seed cria ao menos 3 comps PUBLISHED em tiers diferentes, com traits, units (early/core/flex), carry+itens, item priority, augments+augmentPriority, posicoes de board e guia preenchido (whenToPlay + earlyGame/midGame/lateGame)",
+        "Ao menos uma comp marcada como introduzida no patch atual (badge Novo) e uma com patchUpdated no patch atual",
+        "npx prisma db seed completa sem erro",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Service de badges (Novo/Atualizado) com testes",
+      "description": "As a developer, I want badge derivation logic so that comps show correct Novo/Atualizado state.",
+      "acceptanceCriteria": [
+        "src/server/services/badges.ts: isNew = comp.patchIntroducedId === currentPatchId; isUpdated = comp.patchUpdatedId === currentPatchId && !isNew",
+        "Funcao retorna { isNew, isUpdated } dado uma comp e o currentPatchId",
+        "Testes unitarios cobrindo casos: nova, atualizada, nenhuma, atualizada+nova (precedencia Novo)",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Queries de leitura: tier list e comp por slug",
+      "description": "As a developer, I want data queries so that public pages can fetch published comps.",
+      "acceptanceCriteria": [
+        "src/server/queries/tierlist.ts: getPublishedComps(set) retorna comps PUBLISHED do set atual com traits/carries para o card, agrupaveis por tier",
+        "src/server/queries/comp.ts: getCompBySlug(slug) retorna a comp publicada com units, itens, augments, board e guia",
+        "Consultas usam o PrismaClient singleton e o SiteConfig para set/patch atuais",
+        "Drafts/archived nao aparecem nas queries publicas",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Layout publico (header com aba Builder + footer)",
+      "description": "As a user, I want a consistent header and footer so that I can navigate and see patch info.",
+      "acceptanceCriteria": [
+        "Route group (public) com layout: header exibe nome/logo (brand-gradient), patch atual e 'ultima atualizacao'",
+        "Header tem navegacao com links: Tierlist e Builder",
+        "Footer com disclaimer de nao-afiliacao a Riot Games",
+        "Cores do tema aplicadas (background/foreground/muted)",
+        "Responsivo (header utilizavel em 360px)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Pagina da tier list (faixas S/A/B/C/X)",
+      "description": "As a user, I want comps grouped by tier so that I can see what is strong now.",
+      "acceptanceCriteria": [
+        "Rota '/' renderiza faixas S, A, B, C e 'Situacional/X' em ordem, usando getPublishedComps",
+        "Cada faixa tem rotulo/cor do tier (tier.{s,a,b,c,x})",
+        "Estado vazio por faixa (ex: 'Nenhuma comp S Tier neste patch')",
+        "Pagina configurada como estatica com ISR (revalidate por tag 'tierlist')",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Componente CompCard com badges",
+      "description": "As a user, I want comp cards so that I can scan and open comps.",
+      "acceptanceCriteria": [
+        "CompCard mostra nome, icones dos traits principais e/ou carry, com fundo muted e borda colorida do tier",
+        "Badges 'Novo' (primary/ciano) e 'Atualizado' (secondary) conforme service de badges",
+        "Card inteiro e link para /comps/[slug]; foco por teclado acessivel com nome da comp",
+        "Tier list usa CompCard nas faixas",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Filtros (tier, sinergia, campeao, busca)",
+      "description": "As a user, I want to filter the tier list so that I find comps by trait or champion.",
+      "acceptanceCriteria": [
+        "Filtro por tier (multi-selecao), por sinergia/trait e por campeao principal, mais busca textual",
+        "Filtros combinam (AND entre categorias) e refletem na URL via query params",
+        "Estado vazio quando nenhum resultado",
+        "No mobile os filtros abrem em drawer/bottom sheet",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Pagina de comp: cabecalho e metadados",
+      "description": "As a user, I want comp header info so that I see tier, difficulty and synergies at the top.",
+      "acceptanceCriteria": [
+        "Rota /comps/[slug] com generateStaticParams + ISR (tag comp:slug)",
+        "Cabecalho exibe nome, badge de tier, playstyle + dificuldade e traits com nivel (ex: Mecha 4)",
+        "Badges Novo/Atualizado quando aplicavel",
+        "404 para slug inexistente ou comp nao publicada",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Pagina de comp: carries e prioridade de itens",
+      "description": "As a user, I want carries and item priority so that I know what to build.",
+      "acceptanceCriteria": [
+        "Lista de carries; cada carry mostra seus itens recomendados na ordem",
+        "Secao 'Item Priority' com itens ordenados e indicador de ordem (setas)",
+        "Tooltip com nome do item/campeao em hover/toque",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Pagina de comp: unidades early/core/flex",
+      "description": "As a user, I want unit lists so that I know what to buy early and what is flexible.",
+      "acceptanceCriteria": [
+        "Secoes 'Early Units', 'Core/Final' e 'Flex Units' com icone e nome (custo/estrela quando houver)",
+        "Layout legivel no mobile",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Pagina de comp: posicionamento no tabuleiro",
+      "description": "As a user, I want a board view so that I know where to position units.",
+      "acceptanceCriteria": [
+        "Componente BoardView: grid hexagonal 4 linhas x 7 colunas com as unidades nas posicoes (boardRow/boardCol)",
+        "Toggle 'mostrar nomes'; carry destacado com accent/brand-gradient",
+        "Responsivo: cabe na largura do mobile sem scroll horizontal",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Pagina de comp: augments e prioridade",
+      "description": "As a user, I want augments and their priority so that I pick the right ones.",
+      "acceptanceCriteria": [
+        "Lista de augments recomendados (icone + tooltip de nome)",
+        "Indicador de Augment Priority a partir de augmentPriority (ex: ECON > ITEMS > COMBAT)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Pagina de comp: guia 'Quando jogar' e 'Como jogar'",
+      "description": "As a user, I want a guide split into when-to-play and how-to-play phases so that I know how to use the comp.",
+      "acceptanceCriteria": [
+        "Tema 'Quando jogar': bloco unico (campo whenToPlay)",
+        "Tema 'Como jogar' com 3 subsecoes: Inicio de jogo (earlyGame), Meio jogo (midGame), Fim de jogo (lateGame)",
+        "Sem rotulos 'Stage 2/3/4'; as 3 subsecoes os substituem",
+        "Bloco opcional de 'Dicas' (tips)",
+        "Texto formatado e legivel; suporta destaque de nomes de unidades/itens",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "SEO: metadata, sitemap, robots e OG",
+      "description": "As a product owner, I want SEO so that comps are indexable and shareable.",
+      "acceptanceCriteria": [
+        "generateMetadata por comp (title, description, Open Graph/Twitter com tier e set/patch) e URL canonica",
+        "app/sitemap.ts gera sitemap.xml apenas com comps PUBLISHED; app/robots.ts gera robots.txt",
+        "opengraph-image por comp (ou imagem OG dinamica)",
+        "JSON-LD basico na pagina de comp",
+        "Typecheck passes"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "Builder: motor de sinergias (funcao pura) com testes",
+      "description": "As a developer, I want a synergy engine so that the builder can show active traits from placed units.",
+      "acceptanceCriteria": [
+        "src/lib/synergy.ts: funcao pura recebe unidades posicionadas + breakpoints do catalogo e retorna traits ativos com nivel",
+        "Conta unidades unicas por trait (nao duplica a mesma unidade) e resolve breakpoints corretamente",
+        "Testes unitarios cobrindo ativacao, breakpoints e duplicatas",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-025",
+      "title": "Builder publico: tabuleiro + paleta de campeoes",
+      "description": "As a user, I want to place champions on a board so that I can experiment with comps.",
+      "acceptanceCriteria": [
+        "Rota /builder com tabuleiro hexagonal 4x7 (componente BuilderBoard)",
+        "ChampionPalette do set atual com busca e ordenacao (custo, nome, origem, classe)",
+        "Adicionar campeao a uma hex (clique/arrastar), mover entre hexes e remover",
+        "Toggles 'Nomes' e 'Limpar'; Desfazer/Refazer (undo/redo)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-026",
+      "title": "Builder: estrelas, custo do time e painel de sinergias",
+      "description": "As a user, I want stars, team cost and live synergies so that I understand the comp I am building.",
+      "acceptanceCriteria": [
+        "Definir nivel de estrela (1-3) por unidade no board",
+        "SynergyPanel lista traits ativos e niveis usando src/lib/synergy.ts, atualizando ao posicionar/remover",
+        "Contador de custo/valor do time e numero de unidades",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-027",
+      "title": "Builder: itens e augments nas unidades",
+      "description": "As a user, I want to equip items and pick augments so that the build is complete.",
+      "acceptanceCriteria": [
+        "ItemPanel com abas (craftables, radiants, artifacts, componentes, outros) e busca",
+        "Atribuir ate 3 itens por unidade (arrastar/clique) e remover item",
+        "AugmentPicker para selecionar ate 3 augments",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-028",
+      "title": "Builder: compartilhar via codigo na URL",
+      "description": "As a user, I want to share my board by link so that others can open the same comp.",
+      "acceptanceCriteria": [
+        "src/lib/board-code.ts: encode/decode do estado (unidades, posicoes, estrelas, itens, augments) em codigo URL-safe",
+        "Rota /builder/[code] decodifica e recarrega o time",
+        "Botao 'Copiar link'; estado refletido na URL ao editar",
+        "Builder efemero: nenhum estado e gravado no servidor/banco — vive apenas no cliente e na URL (sem login, sem salvar comp)",
+        "Round-trip encode->decode preserva o estado (idealmente com teste unitario)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-029",
+      "title": "Pagina de comp: botao 'Abrir no Builder'",
+      "description": "As a user, I want to open a comp in the builder so that I can tweak it.",
+      "acceptanceCriteria": [
+        "Botao 'Abrir no Builder' na pagina de comp gera o codigo (board-code) a partir das unidades CORE (posicoes, estrelas), itens e augments",
+        "O Builder abre em /builder/[code] ja com a composicao carregada",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-030",
+      "title": "Auth do admin (Auth.js + login + middleware)",
+      "description": "As a curator, I want secure login so that only authorized users access the admin.",
+      "acceptanceCriteria": [
+        "Auth.js configurado (api/auth/[...nextauth]) usando o modelo User; helper requireRole()",
+        "Login existe apenas para o admin/curador; NAO ha cadastro/login para usuario comum",
+        "Pagina /admin/login funcional; logout disponivel",
+        "middleware.ts protege /admin/** redirecionando nao autenticados para /admin/login",
+        "Rotas publicas (/, /comps/[slug], /builder, /builder/[code]) permanecem acessiveis sem login; apenas /admin/** exige autenticacao",
+        "Usuario sem permissao nao acessa rotas do admin",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-031",
+      "title": "Layout e dashboard do admin",
+      "description": "As a curator, I want an admin shell so that I can navigate the panel.",
+      "acceptanceCriteria": [
+        "Route group (admin) com layout dinamico (force-dynamic) que valida sessao/role",
+        "/admin dashboard mostra contagem de drafts e o patch atual",
+        "Navegacao para Comps, Catalogo e Patches",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-032",
+      "title": "Componente CatalogPicker (autocomplete com icones)",
+      "description": "As a curator, I want to pick champions/items/traits/augments so that comp forms reuse catalog data.",
+      "acceptanceCriteria": [
+        "CatalogPicker busca e seleciona Champion/Item/Trait/Augment por nome com icone",
+        "Suporta selecao unica e multipla; retorna ids selecionados",
+        "Usavel dentro dos formularios do admin",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-033",
+      "title": "Listagem de comps no admin",
+      "description": "As a curator, I want a comps list so that I can manage existing comps.",
+      "acceptanceCriteria": [
+        "/admin/comps lista comps com status, tier e patch",
+        "Acoes/links para criar nova e editar existente",
+        "Filtro/visualizacao por status (draft/published/archived)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 33,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-034",
+      "title": "Form de comp: campos basicos e guia (criar/editar)",
+      "description": "As a curator, I want to create/edit comp base fields so that core content is saved.",
+      "acceptanceCriteria": [
+        "/admin/comps/new e /admin/comps/[id] com form: name, slug (auto a partir do name), tier, situational, status, playstyle, difficulty, patchIntroduced/patchUpdated, whenToPlay (Quando jogar), earlyGame (Inicio de jogo), midGame (Meio jogo), lateGame (Fim de jogo), tips",
+        "Server Actions createComp/updateComp em src/actions/comps.ts salvam no banco",
+        "slug gerado de forma estavel e unico",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 34,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-035",
+      "title": "Form de comp: traits e listas de unidades early/flex",
+      "description": "As a curator, I want to edit traits and early/flex unit lists so that the comp lists synergies and non-board units.",
+      "acceptanceCriteria": [
+        "Editor de traits: adicionar/remover CompTrait com nivel e ordem (via CatalogPicker)",
+        "Editores de listas de unidades EARLY e FLEX (CompUnit sem posicao de board) com role apropriado",
+        "Alteracoes persistidas via Server Action",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 35,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-036",
+      "title": "Form de comp: prioridade de itens e de augments",
+      "description": "As a curator, I want to edit item priority and augment priority so that the comp shows build order guidance.",
+      "acceptanceCriteria": [
+        "Editor de prioridade geral de itens (CompItemPriority ordenado)",
+        "Editor de augmentPriority (ordem das categorias ECON/ITEMS/COMBAT)",
+        "Alteracoes persistidas via Server Action",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 36,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-037",
+      "title": "Admin: editar a comp via Builder (board final)",
+      "description": "As a curator, I want to use the Builder in the admin so that I define the final board visually and persist it.",
+      "acceptanceCriteria": [
+        "/admin/comps/[id]/build embute o componente <Builder/> (mesmo da area publica), carregando a comp existente",
+        "Permite posicionar unidades CORE, definir estrela, marcar carry, atribuir itens e selecionar augments",
+        "src/actions/comp-builder.ts salva o estado em CompUnit (boardRow/boardCol/starLevel/isCarry/role CORE), CompUnitItem e CompAugment",
+        "O board e os dados resultantes batem com a pagina publica da comp (paridade)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 37,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-038",
+      "title": "Publicacao: validacao + revalidacao ISR",
+      "description": "As a curator, I want validated publish/unpublish so that incomplete comps are not published and the public site updates.",
+      "acceptanceCriteria": [
+        "Server Actions publishComp/unpublishComp/archiveComp em src/actions/comps.ts",
+        "Validacao impede PUBLISHED sem: name, tier, >=1 trait, >=1 carry e composicao final (board) nao vazia (FR-20)",
+        "Ao publicar, revalidateTag('tierlist') e revalidateTag('comp:'+slug)",
+        "Mudanca aparece na tier list publica apos publicar",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 38,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-039",
+      "title": "Fluxo de patch (carimbo + snapshots + badges)",
+      "description": "As a curator, I want to set the current patch so that Novo/Atualizado badges and history update.",
+      "acceptanceCriteria": [
+        "/admin/patches permite criar patch e definir o 'patch atual' (SiteConfig) com data",
+        "src/actions/patches.ts setCurrentPatch grava CompTierSnapshot do patch anterior para cada comp publicada",
+        "Apos trocar o patch atual, badges Novo/Atualizado derivam do novo estado e a tier list e revalidada",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 39,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-040",
+      "title": "Preview de draft (noindex)",
+      "description": "As a curator, I want to preview drafts so that I can review before publishing.",
+      "acceptanceCriteria": [
+        "/admin/preview/[id] renderiza a comp em draft como apareceria publicada",
+        "Pagina marcada noindex; drafts nao aparecem na tier list publica nem no sitemap",
+        "Acessivel apenas a usuarios autenticados",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 40,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-041",
+      "title": "Analytics e monitoramento de erros",
+      "description": "As a product owner, I want analytics and error monitoring so that I can measure usage and catch failures.",
+      "acceptanceCriteria": [
+        "Analytics de pageview integrado (privacy-friendly) com consentimento quando aplicavel",
+        "Eventos: aplicar filtro, abrir comp e abrir no builder",
+        "Monitoramento de erros (ex: Sentry) configurado para producao",
+        "Typecheck passes"
+      ],
+      "priority": 41,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-042",
+      "title": "Performance e responsividade (imagens + breakpoints)",
+      "description": "As a user, I want a fast responsive site so that it works well on mobile during a game.",
+      "acceptanceCriteria": [
+        "next.config images.remotePatterns libera o CDN do Data Dragon; icones via next/image com lazy-load",
+        "Layouts validados em 360px, tablet e desktop sem scroll horizontal indevido (inclui tier list, comp e builder)",
+        "Lighthouse Performance >= 90 (mobile) na tier list e na pagina de comp",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 42,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
