@@ -245,9 +245,14 @@ export function BuilderBoard({
         {Array.from({ length: BOARD_ROWS }, (_, row) => (
           <div
             key={row}
-            className={`flex ${row % 2 === 1 ? "pl-[6.667%]" : ""}`}
+            className="flex"
             style={row > 0 ? { marginTop: "-2.5%" } : undefined}
           >
+            {/* Meia-hex de offset nas filas impares — um espacador (nao padding),
+                para nao encolher o content-box e manter todos os hexes iguais. */}
+            {row % 2 === 1 ? (
+              <div className="w-[6.667%] shrink-0" aria-hidden="true" />
+            ) : null}
             {Array.from({ length: BOARD_COLS }, (_, col) => {
               const unit = byHex.get(hexKey(row, col)) ?? null;
               const champion = unit
