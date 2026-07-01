@@ -26,15 +26,12 @@ export function TierBands({ groups, currentPatchId }: TierBandsProps) {
             aria-label={meta.label}
             className="flex items-stretch gap-3"
           >
-            {/* Tier badge — big colored square with the letter + corner brackets
-                (tftacademy-style), in the TFTLab tier colors. */}
+            {/* Tier badge — big colored square with the letter + a full
+                continuous outline, in the TFTLab tier colors. */}
             <div
               className={`relative flex min-h-[4.25rem] w-[4.25rem] shrink-0 flex-col items-center justify-center rounded-lg text-background ${meta.chipClass} sm:w-[5.25rem]`}
             >
-              <span className="pointer-events-none absolute left-1.5 top-1.5 h-2.5 w-2.5 border-l-2 border-t-2 border-background/50" />
-              <span className="pointer-events-none absolute right-1.5 top-1.5 h-2.5 w-2.5 border-r-2 border-t-2 border-background/50" />
-              <span className="pointer-events-none absolute bottom-1.5 left-1.5 h-2.5 w-2.5 border-b-2 border-l-2 border-background/50" />
-              <span className="pointer-events-none absolute bottom-1.5 right-1.5 h-2.5 w-2.5 border-b-2 border-r-2 border-background/50" />
+              <span className="pointer-events-none absolute inset-1.5 rounded-[0.35rem] border-2 border-background/50" />
               <span
                 className="text-4xl font-extrabold leading-none sm:text-5xl"
                 aria-hidden="true"
