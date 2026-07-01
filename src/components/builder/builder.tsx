@@ -575,13 +575,23 @@ export function Builder({
               aria-pressed={selectedUnit.stars === MAX_STARS}
               aria-label="Três estrelas"
               title="Alternar 3 estrelas"
-              className={`inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              className={`inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-bold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 selectedUnit.stars === MAX_STARS
-                  ? "border-amber-300/50 bg-amber-400/20 text-amber-200"
+                  ? "border-amber-300/60 bg-amber-400/20 text-amber-200 [text-shadow:0_0_5px_rgba(251,191,36,0.55)]"
                   : "border-border bg-muted/40 text-muted-foreground hover:text-foreground"
               }`}
             >
-              3★
+              <span>3</span>
+              <span
+                aria-hidden="true"
+                className={
+                  selectedUnit.stars === MAX_STARS
+                    ? "text-amber-300"
+                    : "text-amber-400/70"
+                }
+              >
+                ★
+              </span>
             </button>
           ) : null}
 

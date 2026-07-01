@@ -175,10 +175,17 @@ function Hex({
         ) : null}
         {champion && stars > 1 ? (
           <span
-            className="pointer-events-none absolute inset-x-0 top-[7%] text-center text-[9px] font-semibold leading-none text-amber-300 [text-shadow:0_1px_1px_rgb(0_0_0)]"
+            className="pointer-events-none absolute left-1/2 top-[2%] z-10 inline-flex -translate-x-1/2 items-center gap-px rounded-full bg-black/60 px-1.5 py-[1.5px] leading-none ring-1 ring-amber-400/40"
             aria-hidden="true"
           >
-            {"★".repeat(stars)}
+            {Array.from({ length: stars }, (_, i) => (
+              <span
+                key={i}
+                className="text-[9px] text-amber-300 [text-shadow:0_0_4px_rgba(251,191,36,0.9)]"
+              >
+                ★
+              </span>
+            ))}
           </span>
         ) : null}
         {carry ? (
