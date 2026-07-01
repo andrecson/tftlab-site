@@ -19,7 +19,7 @@ const TIER_BADGE: Record<number, string> = {
   2: "bg-slate-400/20 text-slate-100 ring-slate-300/40",
   3: "bg-amber-400/25 text-amber-100 ring-amber-300/50",
 };
-const TIER_BADGE_MAX = "bg-brand-gradient text-background ring-transparent";
+const TIER_BADGE_MAX = "bg-primary text-background ring-transparent";
 
 function tierBadgeClass(tier: number): string {
   return TIER_BADGE[tier] ?? TIER_BADGE_MAX;

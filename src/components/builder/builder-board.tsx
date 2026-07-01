@@ -86,14 +86,14 @@ function Hex({
   // inner well — the two tones + the inter-column gap give each hex a crisp,
   // well-defined edge (US-044). Full class strings so Tailwind keeps them.
   const rimClass = selected
-    ? "bg-gradient-to-b from-[#8af2e8] via-primary to-[#0e7490]"
+    ? "bg-primary"
     : unit
       ? carry
-        ? "bg-gradient-to-b from-amber-300 to-amber-600"
-        : "bg-gradient-to-b from-slate-400/85 to-slate-600/75"
+        ? "bg-amber-400"
+        : "bg-slate-500/80"
       : armed
-        ? "bg-gradient-to-b from-primary/70 to-primary/30"
-        : "bg-gradient-to-b from-[#3a4f6b] to-[#1c2c44]";
+        ? "bg-primary/50"
+        : "bg-[#35496b]";
 
   // A soft glow that hugs the hex silhouette (drop-shadow respects clip-path)
   // to make the selected/carry states pop without a clipped-away ring.
@@ -240,7 +240,7 @@ export function BuilderBoard({
   const byHex = unitsByHex(units);
 
   return (
-    <div className="w-full max-w-5xl rounded-xl border border-[#20344f] bg-gradient-to-b from-[#152740] to-[#0c1a2c] p-3 shadow-inner sm:p-4">
+    <div className="w-full max-w-5xl rounded-xl border border-[#20344f] bg-[#122236] p-3 shadow-inner sm:p-4">
       <div className="flex flex-col">
         {Array.from({ length: BOARD_ROWS }, (_, row) => (
           <div
