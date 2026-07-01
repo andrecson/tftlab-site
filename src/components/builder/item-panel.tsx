@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
-import { IconTooltip } from "@/components/icon-tooltip";
 import { ITEM_DND_PREFIX, MAX_ITEMS } from "@/lib/builder";
 import type { ItemType } from "@prisma/client";
 import type { BuilderItem } from "@/server/queries/catalog";
@@ -12,10 +11,9 @@ import type { BuilderItem } from "@/server/queries/catalog";
  * Always-open item palette for the builder (US-027, revised).
  *
  * The item grid (tabs by family + search) is ALWAYS visible and every item is
- * draggable — drop one onto a champion on the board to equip it (no selection
- * required, tactics.tools-style). When a unit IS selected the panel also shows
- * that unit's equipped slots (each removable) and enables click-to-equip on the
- * selected unit. All board state lives in the parent.
+ * draggable — drop one onto a champion on the board to equip it. Equipped items
+ * are shown ONLY on the champion on the board (removed here); click-to-equip
+ * targets the currently selected unit. All board state lives in the parent.
  */
 
 const ITEM_TABS: { key: string; label: string; types: ItemType[] }[] = [
@@ -28,24 +26,19 @@ const ITEM_TABS: { key: string; label: string; types: ItemType[] }[] = [
 
 interface ItemPanelProps {
   items: BuilderItem[];
-  itemsById: Map<string, BuilderItem>;
   /** Selected champion name, or null when no unit is selected. */
   championName: string | null;
   /** Equipped item ids on the selected unit (empty when none is selected). */
   equipped: string[];
   /** Equip an item on the selected unit (no-op when none is selected). */
   onEquip: (itemId: string) => void;
-  /** Remove the equipped item at `index` on the selected unit. */
-  onRemove: (index: number) => void;
 }
 
 export function ItemPanel({
   items,
-  itemsById,
   championName,
   equipped,
   onEquip,
-  onRemove,
 }: ItemPanelProps) {
   const [tab, setTab] = useState(ITEM_TABS[0].key);
   const [query, setQuery] = useState("");
@@ -79,50 +72,10 @@ export function ItemPanel({
             "Itens"
           )}
         </h2>
-        {hasSelection ? (
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {equipped.length}/{MAX_ITEMS}
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground">
-            Arraste um item para um campeão no tabuleiro
-          </span>
-        )}
+        <span className="text-xs text-muted-foreground">
+          Arraste um item para um campeão no tabuleiro
+        </span>
       </div>
-
-      {/* Equipped item slots — only shown for the selected unit. */}
-      {hasSelection ? (
-        <ul className="flex items-center gap-2">
-          {Array.from({ length: MAX_ITEMS }, (_, slot) => {
-            const itemId = equipped[slot];
-            const item = itemId ? itemsById.get(itemId) : undefined;
-            return (
-              <li key={slot}>
-                {item ? (
-                  <span className="group/slot relative inline-flex">
-                    <IconTooltip src={item.iconUrl} name={item.name} size={40} />
-                    <button
-                      type="button"
-                      onClick={() => onRemove(slot)}
-                      aria-label={`Remover ${item.name}`}
-                      className="absolute -right-1.5 -top-1.5 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold leading-none text-destructive-foreground ring-1 ring-background transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ) : (
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground/50"
-                  >
-                    +
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
 
       {/* Tabs by item family. */}
       <div role="tablist" aria-label="Categorias de itens" className="flex flex-wrap gap-1">
@@ -161,7 +114,8 @@ export function ItemPanel({
 
       {full ? (
         <p className="rounded-md bg-muted/40 px-2 py-1.5 text-center text-xs text-muted-foreground">
-          Esta unidade já tem {MAX_ITEMS} itens. Remova um para adicionar outro.
+          Esta unidade já tem {MAX_ITEMS} itens. Clique num item sobre o campeão
+          para remover.
         </p>
       ) : null}
 

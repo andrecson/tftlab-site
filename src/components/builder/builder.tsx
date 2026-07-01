@@ -10,6 +10,8 @@ import { SynergyPanel } from "@/components/builder/synergy-panel";
 import { encodeBoard } from "@/lib/board-code";
 import {
   addUnitItem,
+  BOARD_COLS,
+  BOARD_ROWS,
   MAX_ITEMS,
   MAX_STARS,
   MIN_STARS,
@@ -276,12 +278,21 @@ export function Builder({
     [commit, units],
   );
 
-  const armChampion = useCallback((championId: string) => {
-    setSelectedUnitId(null);
-    setArmedChampionId((current) =>
-      current === championId ? null : championId,
-    );
-  }, []);
+  // Clicar num campeao o coloca direto no primeiro hex vazio do tabuleiro.
+  const pickChampion = useCallback(
+    (championId: string) => {
+      setSelectedUnitId(null);
+      for (let row = 0; row < BOARD_ROWS; row += 1) {
+        for (let col = 0; col < BOARD_COLS; col += 1) {
+          if (!units.some((u) => u.row === row && u.col === col)) {
+            placeChampion(championId, row, col);
+            return;
+          }
+        }
+      }
+    },
+    [placeChampion, units],
+  );
 
   const handleHexClick = useCallback(
     (row: number, col: number) => {
@@ -472,9 +483,6 @@ export function Builder({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [redo, removeSelected, selectedUnitId, undo]);
 
-  const armedChampion = armedChampionId
-    ? (championsById.get(armedChampionId) ?? null)
-    : null;
   const selectedUnit = selectedUnitId
     ? (units.find((u) => u.id === selectedUnitId) ?? null)
     : null;
@@ -483,12 +491,11 @@ export function Builder({
     : null;
 
   let hint: string;
-  if (armedChampion) {
-    hint = `Clique em um hex para posicionar ${armedChampion.name} (ou arraste da paleta).`;
-  } else if (selectedChampion) {
-    hint = `${selectedChampion.name} selecionado — clique em um hex para mover, ou remova.`;
+  if (selectedChampion) {
+    hint = `${selectedChampion.name} selecionado — clique em um hex para mover, ou arraste para fora do tabuleiro para remover.`;
   } else {
-    hint = "Clique em um campeão e depois em um hex para posicioná-lo.";
+    hint =
+      "Clique num campeão para adicioná-lo ao tabuleiro (ou arraste para um hex). Arraste um campeão para fora para removê-lo.";
   }
 
   return (
@@ -642,20 +649,17 @@ export function Builder({
               onMoveUnit={handleMoveUnit}
               onDropItem={handleDropItem}
               onRemoveUnit={removeUnit}
+              onRemoveItem={removeUnitItem}
             />
           </div>
         </div>
 
         <ItemPanel
           items={items}
-          itemsById={itemsById}
           championName={selectedChampion ? selectedChampion.name : null}
           equipped={selectedUnit ? selectedUnit.items : []}
           onEquip={(itemId) => {
             if (selectedUnit) equipItem(selectedUnit.id, itemId);
-          }}
-          onRemove={(index) => {
-            if (selectedUnit) removeUnitItem(selectedUnit.id, index);
           }}
         />
 
@@ -669,7 +673,7 @@ export function Builder({
               <ChampionPalette
                 champions={champions}
                 armedChampionId={armedChampionId}
-                onArm={armChampion}
+                onArm={pickChampion}
               />
             )}
           </div>

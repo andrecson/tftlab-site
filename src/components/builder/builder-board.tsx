@@ -40,6 +40,7 @@ interface BuilderBoardProps {
   onMoveUnit: (unitId: string, row: number, col: number) => void;
   onDropItem: (itemId: string, row: number, col: number) => void;
   onRemoveUnit: (unitId: string) => void;
+  onRemoveItem: (unitId: string, index: number) => void;
 }
 
 interface HexProps {
@@ -56,6 +57,7 @@ interface HexProps {
   onMoveUnit: (unitId: string, row: number, col: number) => void;
   onDropItem: (itemId: string, row: number, col: number) => void;
   onRemoveUnit: (unitId: string) => void;
+  onRemoveItem: (unitId: string, index: number) => void;
 }
 
 function Hex({
@@ -72,6 +74,7 @@ function Hex({
   onMoveUnit,
   onDropItem,
   onRemoveUnit,
+  onRemoveItem,
 }: HexProps) {
   const stars = unit ? clampStars(unit.stars) : 1;
   const carry = unit?.isCarry ?? false;
@@ -186,30 +189,34 @@ function Hex({
             C
           </span>
         ) : null}
-        {champion && items.length > 0 ? (
-          <span className="pointer-events-none absolute inset-x-0 bottom-[19%] flex items-end justify-center gap-[5%] px-[13%]">
-            {items.map((item, index) => (
-              <span
-                key={`${item.id}-${index}`}
-                className="relative block aspect-square w-[22%] overflow-hidden rounded-[2px] ring-1 ring-black/70"
-              >
-                <Image
-                  src={item.iconUrl}
-                  alt=""
-                  fill
-                  sizes="16px"
-                  className="object-cover"
-                />
-              </span>
-            ))}
-          </span>
-        ) : null}
         {champion && showName ? (
           <span className="pointer-events-none absolute inset-x-[6%] bottom-[10%] truncate rounded-sm bg-black/60 px-0.5 text-center text-[8px] font-semibold leading-tight text-foreground">
             {champion.name}
           </span>
         ) : null}
       </button>
+      {champion && items.length > 0 ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-[19%] z-20 flex items-end justify-center gap-[5%] px-[13%]">
+          {items.map((item, index) => (
+            <button
+              key={`${item.id}-${index}`}
+              type="button"
+              onClick={() => unit && onRemoveItem(unit.id, index)}
+              aria-label={`Remover ${item.name}`}
+              title={`Remover ${item.name}`}
+              className="pointer-events-auto relative block aspect-square w-[22%] overflow-hidden rounded-[2px] ring-1 ring-black/70 transition-transform hover:z-10 hover:scale-125 hover:ring-2 hover:ring-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Image
+                src={item.iconUrl}
+                alt=""
+                fill
+                sizes="16px"
+                className="object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -226,6 +233,7 @@ export function BuilderBoard({
   onMoveUnit,
   onDropItem,
   onRemoveUnit,
+  onRemoveItem,
 }: BuilderBoardProps) {
   const byHex = unitsByHex(units);
 
@@ -264,6 +272,7 @@ export function BuilderBoard({
                   onMoveUnit={onMoveUnit}
                   onDropItem={onDropItem}
                   onRemoveUnit={onRemoveUnit}
+                  onRemoveItem={onRemoveItem}
                 />
               );
             })}
