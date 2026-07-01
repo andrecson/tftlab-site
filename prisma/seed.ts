@@ -16,7 +16,7 @@
  */
 import bcrypt from "bcryptjs";
 import { db } from "../src/server/db";
-import { getCatalog } from "../src/server/ddragon";
+import { importCatalog } from "../src/server/catalog-import";
 
 // Literal unions that mirror the Prisma enums (structurally assignable to them,
 // so no @prisma/client enum import is needed).
@@ -25,106 +25,17 @@ type Category = "ECON" | "ITEMS" | "COMBAT";
 type TierName = "S" | "A" | "B" | "C" | "X";
 type DifficultyName = "EASY" | "MEDIUM" | "HARD";
 
-/** Run an async op over `rows` in bounded-concurrency batches. */
-async function inBatches<T>(rows: T[], size: number, op: (row: T) => Promise<unknown>): Promise<void> {
-  for (let i = 0; i < rows.length; i += size) {
-    await Promise.all(rows.slice(i, i + size).map(op));
-  }
-}
-
 // --- Catalog import (US-009) -------------------------------------------------
 
 /** Import the current set's catalog into the DB; returns the set token/number. */
 async function seedCatalog(): Promise<{ set: string; setNumber: number }> {
-  console.log("Fetching TFT catalog from Data Dragon...");
-  const catalog = await getCatalog();
-  const { set } = catalog;
+  console.log("Importing TFT catalog...");
+  const r = await importCatalog();
   console.log(
-    `Set ${catalog.setNumber} (${set}): ` +
-      `${catalog.champions.length} champions, ${catalog.traits.length} traits, ` +
-      `${catalog.items.length} items, ${catalog.augments.length} augments`,
+    `Seeded catalog (set ${r.set}) -> champions: ${r.champions}, items: ${r.items}, ` +
+      `traits: ${r.traits}, augments: ${r.augments}, championTraits: ${r.championTraits}`,
   );
-
-  // Traits first so champions can resolve their trait ids. Upsert is keyed by
-  // apiId, so each trait's row id is stable across runs; build apiId -> id.
-  const traitIdByApiId = new Map<string, string>();
-  await inBatches(catalog.traits, 25, async (t) => {
-    const row = await db.trait.upsert({
-      where: { apiId_set: { apiId: t.apiId, set } },
-      create: { apiId: t.apiId, name: t.name, iconUrl: t.iconUrl, set, breakpoints: t.breakpoints },
-      update: { name: t.name, iconUrl: t.iconUrl, breakpoints: t.breakpoints },
-    });
-    traitIdByApiId.set(t.apiId, row.id);
-  });
-
-  // Champions reference traits by display NAME, and a few names map to several
-  // trait variants (e.g. Set 17's "Stargazer" has 8 constellation apiIds). Pin
-  // each name to one canonical apiId deterministically (shortest apiId, then
-  // lexicographic => the base trait) so champion<->trait links are identical on
-  // every re-seed (idempotency). Resolving by name with a non-deterministic
-  // winner would silently accumulate duplicate ChampionTrait rows.
-  const canonicalApiIdByTraitName = new Map<string, string>();
-  for (const t of catalog.traits) {
-    const current = canonicalApiIdByTraitName.get(t.name);
-    if (
-      current === undefined ||
-      t.apiId.length < current.length ||
-      (t.apiId.length === current.length && t.apiId < current)
-    ) {
-      canonicalApiIdByTraitName.set(t.name, t.apiId);
-    }
-  }
-
-  await inBatches(catalog.items, 25, (it) =>
-    db.item.upsert({
-      where: { apiId_set: { apiId: it.apiId, set } },
-      create: { apiId: it.apiId, name: it.name, iconUrl: it.iconUrl, type: it.type, set },
-      update: { name: it.name, iconUrl: it.iconUrl, type: it.type },
-    }),
-  );
-
-  await inBatches(catalog.augments, 25, (a) =>
-    db.augment.upsert({
-      where: { apiId_set: { apiId: a.apiId, set } },
-      create: { apiId: a.apiId, name: a.name, iconUrl: a.iconUrl, tier: a.tier, set },
-      update: { name: a.name, iconUrl: a.iconUrl, tier: a.tier },
-    }),
-  );
-
-  // Champions + their ChampionTrait edges.
-  let linkCount = 0;
-  await inBatches(catalog.champions, 20, async (c) => {
-    const champion = await db.champion.upsert({
-      where: { apiId_set: { apiId: c.apiId, set } },
-      create: { apiId: c.apiId, name: c.name, cost: c.cost, iconUrl: c.iconUrl, set },
-      update: { name: c.name, cost: c.cost, iconUrl: c.iconUrl },
-    });
-    for (const traitName of c.traitNames) {
-      const apiId = canonicalApiIdByTraitName.get(traitName);
-      const traitId = apiId ? traitIdByApiId.get(apiId) : undefined;
-      if (!traitId) continue; // trait not in catalog (should not happen for current set)
-      await db.championTrait.upsert({
-        where: { championId_traitId: { championId: champion.id, traitId } },
-        create: { championId: champion.id, traitId },
-        update: {},
-      });
-      linkCount++;
-    }
-  });
-
-  const [champions, items, traits, augments, championTraits] = await Promise.all([
-    db.champion.count({ where: { set } }),
-    db.item.count({ where: { set } }),
-    db.trait.count({ where: { set } }),
-    db.augment.count({ where: { set } }),
-    db.championTrait.count(),
-  ]);
-  console.log(
-    `Seeded catalog (set ${set}) -> champions: ${champions}, items: ${items}, traits: ${traits}, ` +
-      `augments: ${augments}, championTraits: ${championTraits} (${linkCount} links written)`,
-  );
-
-  return { set, setNumber: catalog.setNumber };
+  return { set: r.set, setNumber: r.setNumber };
 }
 
 // --- Sample data (US-010) ----------------------------------------------------

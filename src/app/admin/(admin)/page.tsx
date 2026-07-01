@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getAdminDashboardStats } from "@/server/queries/admin";
+import { ReimportCatalogButton } from "@/components/admin/reimport-catalog-button";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -106,6 +107,24 @@ export default async function AdminDashboardPage() {
             Nenhum patch configurado.
           </p>
         )}
+      </section>
+
+      {/* Catalog re-import (on demand) */}
+      <section
+        aria-labelledby="catalogo-atualizar"
+        className="rounded-xl border border-border bg-card p-5"
+      >
+        <h2
+          id="catalogo-atualizar"
+          className="text-sm font-medium text-muted-foreground"
+        >
+          Catálogo (campeões, itens e augments)
+        </h2>
+        <p className="mb-3 mt-1 text-sm text-muted-foreground">
+          Re-importa o catálogo da fonte (Community Dragon) e atualiza as listas
+          do builder e dos editores de guia. Rode após um novo patch.
+        </p>
+        <ReimportCatalogButton />
       </section>
 
       {/* Counts */}

@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test \"src/**/*.test.ts\"",
     "db:seed": "prisma db seed",
+    "catalog:import": "tsx --env-file=.env scripts/import-catalog.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
