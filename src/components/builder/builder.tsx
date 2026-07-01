@@ -636,20 +636,18 @@ export function Builder({
           </div>
         </div>
 
-        {selectedUnit && selectedChampion ? (
-          <ItemPanel
-            items={items}
-            itemsById={itemsById}
-            championName={selectedChampion.name}
-            equipped={selectedUnit.items}
-            onEquip={(itemId) => equipItem(selectedUnit.id, itemId)}
-            onRemove={(index) => removeUnitItem(selectedUnit.id, index)}
-          />
-        ) : (
-          <p className="rounded-lg border border-dashed border-border bg-card/40 px-3 py-4 text-center text-xs text-muted-foreground">
-            Selecione uma unidade no tabuleiro para equipar itens (até {MAX_ITEMS}).
-          </p>
-        )}
+        <ItemPanel
+          items={items}
+          itemsById={itemsById}
+          championName={selectedChampion ? selectedChampion.name : null}
+          equipped={selectedUnit ? selectedUnit.items : []}
+          onEquip={(itemId) => {
+            if (selectedUnit) equipItem(selectedUnit.id, itemId);
+          }}
+          onRemove={(index) => {
+            if (selectedUnit) removeUnitItem(selectedUnit.id, index);
+          }}
+        />
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
           <div className="min-w-0 flex-1">
