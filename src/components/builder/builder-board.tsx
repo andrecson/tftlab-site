@@ -152,7 +152,7 @@ function Hex({
         {/* Inner well — the dark seat that frames the champion, or the empty
             hex. Brightens on hover for empty, non-armed hexes as a drop hint. */}
         <span
-          className={`absolute inset-[6%] bg-[#0a1322] ${
+          className={`absolute inset-[8%] bg-[#0a1322] ${
             unit || armed
               ? ""
               : "transition-colors group-hover/hex:bg-[#182842]"
@@ -161,7 +161,7 @@ function Hex({
         />
         {champion ? (
           <span
-            className="absolute inset-[6%] overflow-hidden"
+            className="absolute inset-[8%] overflow-hidden"
             style={{ clipPath: BUILDER_HEX_CLIP }}
           >
             <Image
@@ -240,7 +240,7 @@ export function BuilderBoard({
   const byHex = unitsByHex(units);
 
   return (
-    <div className="w-full max-w-4xl rounded-xl border border-[#20344f] bg-gradient-to-b from-[#152740] to-[#0c1a2c] p-3 shadow-inner sm:p-4">
+    <div className="w-full max-w-5xl rounded-xl border border-[#20344f] bg-gradient-to-b from-[#152740] to-[#0c1a2c] p-3 shadow-inner sm:p-4">
       <div className="flex flex-col">
         {Array.from({ length: BOARD_ROWS }, (_, row) => (
           <div

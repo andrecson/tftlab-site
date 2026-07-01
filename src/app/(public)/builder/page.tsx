@@ -26,7 +26,7 @@ export default async function BuilderPage() {
   const { champions, traits, items, augments } = await getBuilderCatalog();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
+    <div className="mx-auto max-w-[88rem] px-4 py-8">
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           Builder
