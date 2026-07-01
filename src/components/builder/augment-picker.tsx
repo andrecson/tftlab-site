@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { IconTooltip } from "@/components/icon-tooltip";
 import { MAX_AUGMENTS } from "@/lib/builder";
@@ -46,6 +46,16 @@ export function AugmentPicker({
     );
   }, [augments, query]);
 
+  // Fecha o pop-up com Esc.
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPickerOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pickerOpen]);
+
   return (
     <section
       aria-label="Augments"
@@ -58,8 +68,8 @@ export function AugmentPicker({
         </span>
       </div>
 
-      {/* Chosen augment slots — empilhados na vertical (coluna estreita). */}
-      <ul className="flex flex-col items-start gap-2">
+      {/* Chosen augment slots — empilhados e centralizados na coluna estreita. */}
+      <ul className="flex flex-col items-center gap-2">
         {Array.from({ length: MAX_AUGMENTS }, (_, slot) => {
           const augmentId = selected[slot];
           const augment = augmentId ? augmentsById.get(augmentId) : undefined;
@@ -98,74 +108,86 @@ export function AugmentPicker({
       </ul>
 
       {pickerOpen ? (
-        <div className="flex flex-col gap-2 border-t border-border pt-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              Escolha um augment
-            </span>
-            <button
-              type="button"
-              onClick={() => setPickerOpen(false)}
-              className="text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:underline focus-visible:outline-none"
-            >
-              Fechar
-            </button>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Escolher augment"
+          onClick={() => setPickerOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            className="flex max-h-[80vh] w-full max-w-2xl flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-2xl"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">
+                Escolha um augment
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPickerOpen(false)}
+                aria-label="Fechar"
+                className="rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Fechar ✕
+              </button>
+            </div>
+
+            <label className="block">
+              <span className="sr-only">Buscar augment</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar augment…"
+                aria-label="Buscar augment"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </label>
+
+            {visible.length === 0 ? (
+              <p className="px-1 py-6 text-center text-sm text-muted-foreground">
+                Nenhum augment encontrado.
+              </p>
+            ) : (
+              <ul className="grid max-h-[60vh] grid-cols-5 gap-2 overflow-y-auto pr-1 sm:grid-cols-7 md:grid-cols-8">
+                {visible.map((augment) => {
+                  const isSelected = selectedIds.has(augment.id);
+                  const disabled = full && !isSelected;
+                  return (
+                    <li key={augment.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onToggle(augment.id);
+                          setPickerOpen(false);
+                        }}
+                        disabled={disabled}
+                        aria-pressed={isSelected}
+                        title={augment.name}
+                        aria-label={`${isSelected ? "Remover" : "Selecionar"} ${augment.name}`}
+                        className={`flex w-full items-center justify-center rounded-md border p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 ${
+                          isSelected
+                            ? "border-primary bg-primary/10"
+                            : "border-transparent bg-muted/40 hover:border-border hover:bg-muted"
+                        }`}
+                      >
+                        <span className="relative block aspect-square w-full overflow-hidden rounded">
+                          <Image
+                            src={augment.iconUrl}
+                            alt=""
+                            fill
+                            sizes="56px"
+                            className="object-contain"
+                          />
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
-
-          <label className="block">
-            <span className="sr-only">Buscar augment</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar augment…"
-              aria-label="Buscar augment"
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </label>
-
-          {visible.length === 0 ? (
-            <p className="px-1 py-6 text-center text-sm text-muted-foreground">
-              Nenhum augment encontrado.
-            </p>
-          ) : (
-            <ul className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto pr-1">
-              {visible.map((augment) => {
-                const isSelected = selectedIds.has(augment.id);
-                const disabled = full && !isSelected;
-                return (
-                  <li key={augment.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onToggle(augment.id);
-                        setPickerOpen(false);
-                      }}
-                      disabled={disabled}
-                      aria-pressed={isSelected}
-                      title={augment.name}
-                      aria-label={`${isSelected ? "Remover" : "Selecionar"} ${augment.name}`}
-                      className={`flex w-full items-center justify-center rounded-md border p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 ${
-                        isSelected
-                          ? "border-primary bg-primary/10"
-                          : "border-transparent bg-muted/40 hover:border-border hover:bg-muted"
-                      }`}
-                    >
-                      <span className="relative block aspect-square w-full overflow-hidden rounded">
-                        <Image
-                          src={augment.iconUrl}
-                          alt=""
-                          fill
-                          sizes="56px"
-                          className="object-contain"
-                        />
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
         </div>
       ) : null}
     </section>
