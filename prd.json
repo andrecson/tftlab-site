@@ -16,8 +16,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Scaffold already present (Next.js 15.1.7 App Router, TS, ESLint, Tailwind 3.4). Verified: typecheck OK, lint OK, dev server renders homepage at localhost:3000 (browser snapshot shows heading 'MetaComps' + tagline). Only console error is harmless favicon 404."
     },
     {
       "id": "US-002",
@@ -32,8 +32,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Theme applied. globals.css defines all shadcn HSL tokens (--background 224 71% 4%, --foreground 213 31% 91%, --primary/--ring 180 100% 42.5%, --muted/--border/--input 217.2 32.6% 17.5%, --secondary 175 60% 20%, --radius 0.5rem) plus tier vars (--tier-s/a/b/c/x) and a base layer applying bg-background text-foreground to body. tailwind.config.ts maps colors background/foreground/card/primary/secondary/muted/accent/popover/destructive/border/input/ring/tier.{s,a,b,c,x} and backgroundImage brand-gradient (#9333EA->#5EEAD4). Verified: typecheck OK, lint OK. Browser (localhost:3000, 1280x720): body bg computes rgb(3,7,17) dark slate, text rgb(225,231,239) light; h1 uses brand-gradient (rgb(147,51,234)->rgb(94,234,212)); tagline muted-foreground rgb(148,163,184); 0 console errors."
     },
     {
       "id": "US-003",
@@ -47,8 +47,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Prisma wired to Postgres. IMPORTANT: pinned to Prisma 6 (6.19.3), NOT 7 — Prisma 7 removed `url = env(...)` from the schema datasource (it now requires prisma.config.ts + a driver adapter), which conflicts with this AC and every later schema/migrate/seed story. prisma/schema.prisma has `generator client { provider = \"prisma-client-js\" }` and `datasource db { provider = \"postgresql\"; url = env(\"DATABASE_URL\") }`. .env.example documents DATABASE_URL (local .env is gitignored). src/server/db.ts exports the PrismaClient singleton as `db` (cached on globalThis in non-production for hot-reload). Added `postinstall: prisma generate` script; prisma is in devDependencies, @prisma/client in dependencies. Verified: `prisma generate` -> Generated Prisma Client v6.19.3 (no error); typecheck clean; lint clean. Backend-only story, no browser verification required."
     },
     {
       "id": "US-004",
@@ -63,8 +63,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Catalog models added to prisma/schema.prisma: Champion(apiId,name,cost,iconUrl,set), Item(apiId,name,iconUrl,type ItemType,set), Trait(apiId,name,iconUrl,set,breakpoints Json), Augment(apiId,name,iconUrl,set,tier String?), join ChampionTrait(championId,traitId) with onDelete:Cascade. Enum ItemType(COMPONENT,COMPLETED,ARTIFACT,RADIANT,EMBLEM,SUPPORT,OTHER). @@unique([apiId,set]) + @@index([set]) on all four catalog models; ChampionTrait has @@unique([championId,traitId]) + @@index([traitId]). All ids are cuid strings; added createdAt/updatedAt to catalog models. Migration 20260630232443_catalog_models generated & applied via prisma migrate dev (DB now in sync; migrate status clean). Verified at runtime: composite-key upserts, champion<->trait relation include, Json breakpoints [3,4,5], ItemType enum, and cascade delete all work. typecheck + lint clean. NOTE: no local Postgres in this env — spun one up with `embedded-postgres` (see Codebase Patterns 'Local Postgres for migrations')."
     },
     {
       "id": "US-005",
@@ -77,8 +77,8 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added Patch and SiteConfig models to prisma/schema.prisma. Patch(id cuid, version String @unique, set, releasedAt DateTime, createdAt) + @@index([set]). SiteConfig singleton: id Int @default(1) @id, currentSet, currentPatchId String?, currentPatch Patch? relation (FK ON DELETE SET NULL), updatedAt @updatedAt. currentPatch is OPTIONAL so the singleton can exist before a patch is seeded; reverse relation Patch.siteConfigs SiteConfig[] added (Prisma requires both sides). Migration 20260630232742_patch_and_siteconfig generated & applied via prisma migrate dev; migrate status clean (2 migrations, DB in sync). Runtime smoke verified: SiteConfig.upsert({where:{id:1}}) yields id=1, currentPatch relation include returns the patch, Patch.version uniqueness rejects duplicates, updatedAt auto-set. typecheck + lint clean. Backend-only story — no browser verification in AC. The Comp.patchIntroduced/patchUpdated (US-006) and CompTierSnapshot (US-007) reverse relations on Patch are deferred to those stories (the child models don't exist yet)."
     },
     {
       "id": "US-006",
@@ -93,8 +93,8 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added Comp model + 4 enums to prisma/schema.prisma. Enums: Tier(S,A,B,C,X), CompStatus(DRAFT,PUBLISHED,ARCHIVED), Difficulty(EASY,MEDIUM,HARD), AugmentCategory(ECON,ITEMS,COMBAT). Comp fields: id cuid, slug @unique, name, set, tier Tier, situational Boolean @default(false), status CompStatus @default(DRAFT), playstyle String?, difficulty Difficulty @default(MEDIUM), whenToPlay?/earlyGame?/midGame?/lateGame?/tips? (guide), augmentPriority AugmentCategory[] (Postgres enum array, defaults to []), createdAt/updatedAt timestamps, publishedAt DateTime?. Relations use NAMED relations (two FKs to Patch): patchIntroduced (REQUIRED, FK ON DELETE RESTRICT) + patchUpdated (OPTIONAL, FK ON DELETE SET NULL); reverse relations Patch.compsIntroduced/compsUpdated added. Indices @@index([set,status,tier]) and @@index([status]); slug unique index. Migration 20260630233017_comp_model generated & applied via prisma migrate dev (3 migrations, DB in sync). Runtime smoke verified: create with full guide + array + both patches, defaults (status DRAFT, difficulty MEDIUM, situational false, augmentPriority [], patchUpdatedId null), unique slug rejection (P2002), and Patch reverse-relation includes. typecheck + lint clean. Backend-only story — no browser verification in AC."
     },
     {
       "id": "US-007",
@@ -111,8 +111,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added 6 Comp join models + enum UnitRole(EARLY,CORE,FLEX) to prisma/schema.prisma. CompTrait(compId,traitId,level,order) @@unique([compId,traitId]). CompUnit(compId,championId,role UnitRole,isCarry@default(false),carryOrder?,starLevel?,boardRow?,boardCol?,order) @@unique([compId,boardRow,boardCol]) — GOTCHA: boardRow/boardCol are nullable, and Postgres treats NULLs as distinct in unique indexes, so multiple EARLY/FLEX units with null board positions coexist (verified). CompUnitItem(compUnitId,itemId,order) and CompItemPriority(compId,itemId,order @@unique([compId,itemId])). CompAugment(compId,augmentId,order @@unique([compId,augmentId])) and CompTierSnapshot(compId,patchId,tier Tier @@unique([compId,patchId])). onDelete:Cascade on ALL FKs (Comp/CompUnit children cascade per AC; catalog/patch-side FKs also Cascade, matching the existing ChampionTrait pattern). Added back-relations: Comp.{traits,units,itemPriority,augments,tierSnapshots}, CompUnit.items, Champion.compUnits, Trait.compTraits, Item.{compUnitItems,itemPriorities}, Augment.compAugments, Patch.tierSnapshots. Migration 20260630233322_comp_join_tables generated & applied via prisma migrate dev (4 migrations, DB in sync). Runtime smoke verified: full nested create (traits/units/unit-items/itemPriority/augments/snapshots), dup-hex rejection (P2002), multiple null-board units allowed, CompUnit->items cascade, and full Comp-children cascade on delete. typecheck + lint clean. Backend-only story — no browser verification in AC."
     },
     {
       "id": "US-008",
@@ -125,8 +125,8 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added enum UserRole(ADMIN,EDITOR) and model User to prisma/schema.prisma. User: id cuid, email String @unique, name String?, role UserRole @default(EDITOR), passwordHash String? (optional so Auth.js OAuth/credential users can be provisioned later in US-030), createdAt DateTime @default(now()). No reverse relations (User is standalone for now). Migration 20260630233538_user_model generated & applied via prisma migrate dev (5 migrations, DB in sync); SQL creates the UserRole enum, User table, and the User_email_key unique index. Runtime smoke verified: default role EDITOR with null name/passwordHash and auto createdAt, explicit ADMIN create, and duplicate-email rejection (P2002). typecheck + lint clean. Backend-only story — no browser verification in AC."
     },
     {
       "id": "US-009",
@@ -141,8 +141,8 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Catalog seed implemented. src/server/ddragon.ts getCatalog() fetches the full TFT export from Community Dragon (raw.communitydragon.org/latest/cdragon/tft/en_us.json) — NOT classic ddragon, which lacks trait breakpoints AND champion<->trait links (both AC-required for the synergy engine/builder). Current set resolved dynamically as highest mainline mutator TFTSet<number> -> 'TFTSet17'. Normalizes champions (apiId/name/cost/iconUrl/traitNames, filtered to playable cost 1-7 with traits), traits (breakpoints = sorted distinct minUnits), items (classified into ItemType via apiName keyword + composition, junk/MarketOffering/nameless filtered), augments (set-scoped). .tex asset paths rewritten to CDN PNG via assetUrl(); champion icon HEAD-verified HTTP 200 image/png. prisma/seed.ts upserts all four catalog models on @@unique([apiId,set]) and populates ChampionTrait. Runner: tsx via package.json prisma.seed; run with `npm run db:seed` (NOT `prisma db seed` directly — tsx not on PATH). Seeded set TFTSet17: 63 champions, 44 traits, 360 items, 53 augments, 133 championTraits (all counts >0). IDEMPOTENT — proven by seeding twice: counts identical (133/133). GOTCHA fixed: Set 17 has 8 traits all named 'Stargazer'; the original name->id map was non-deterministic under concurrent batch writes and drifted 133->139 on re-seed. Fix: pin each trait name to one canonical apiId (shortest apiId, then lexicographic = base trait) and look up by apiId. Champion.cost (0 missing) and Trait.breakpoints filled (42/44; 'Choose Trait'/'God-Blessed' meta-traits legitimately []). typecheck + lint clean. Backend-only — no browser verification in AC. Added tsx devDep + prisma/CLAUDE.md + src/server/CLAUDE.md."
     },
     {
       "id": "US-010",
@@ -156,8 +156,8 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Extended prisma/seed.ts: seedCatalog() (US-009, returns {set,setNumber}) now runs first, then seedSampleData(set,setNumber). Creates/updates previous patch (version `${setNumber}.1`=17.1, releasedAt 2026-06-01) + current patch (`${setNumber}.2`=17.2, releasedAt 2026-06-15), both upserted on version; SiteConfig upserted on id=1 with currentSet=TFTSet17 + currentPatchId=current. Builds 3 PUBLISHED comps in distinct tiers (S/A/B) referencing REAL seeded catalog rows queried back from the DB (champions by apiId, items type=COMPLETED, augments) — no hardcoded apiIds, follows whatever set the catalog loaded. Each comp: 12-champion disjoint window sorted by cost -> 3 EARLY (off-board), 7 CORE (on-board hexes), 2 FLEX; the 2 most expensive CORE are carries (isCarry, starLevel 3, 3 items each = 6 carryItems); 4 CompTrait (level=unit-count per trait), 4-item CompItemPriority, 3 CompAugment, augmentPriority array (rotated per comp), board positions, full guide (whenToPlay + earlyGame/midGame/lateGame + tips). Badges: comp #1 (n-o-v-a-blitzcrank, S) introduced in current patch => NOVO; comp #2 (meeple-jhin, A) introduced in previous + patchUpdated=current => ATUALIZADO; comp #3 (dark-star-master-yi, B) introduced in previous, no update => none. IDEMPOTENT: comps lack a natural key so each is deleteMany({where:{slug}}) (cascades children) then nested db.comp.create; slugs deduped within a run via uniqueSlug. Verified by seeding TWICE: identical (3 comps, same slugs, no drift). releasedAt/publishedAt use fixed ISO dates so re-seeds are stable. `npm run db:seed` completes with no error; typecheck + lint clean. Backend-only story — no browser verification in AC. Updated prisma/CLAUDE.md with the US-010 seed conventions."
     },
     {
       "id": "US-011",
@@ -171,8 +171,8 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added src/server/services/badges.ts exporting getCompBadges(comp, currentPatchId) -> { isNew, isUpdated }. isNew = comp.patchIntroducedId === currentPatchId; isUpdated = comp.patchUpdatedId === currentPatchId && !isNew (Novo precedence). Accepts a minimal BadgeComp interface (patchIntroducedId: string, patchUpdatedId: string | null) so a full Prisma Comp satisfies it structurally. GUARD: when currentPatchId is null/undefined (SiteConfig.currentPatchId is nullable) returns both-false early — also avoids a null===null false-positive on isUpdated when a comp has no patchUpdatedId. TEST RUNNER (first in repo): Node's built-in test runner via tsx — package.json `test` script = `tsx --test \"src/**/*.test.ts\"` (quotes matter: Node 24 expands the glob, not the shell). Tests use node:test + node:assert/strict, co-located as *.test.ts. src/server/services/badges.test.ts covers all AC cases: nova, atualizada, nenhuma (both no-update variants), atualizada+nova (Novo precedence), plus null/undefined currentPatchId. Verified: `npm test` -> 7 pass / 0 fail; `npm run typecheck` exit 0; `npm run lint` no warnings/errors. Backend-only story — no browser verification in AC."
     },
     {
       "id": "US-012",
@@ -186,8 +186,8 @@
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added public read queries under src/server/queries/. THREE modules: config.ts (getSiteConfig() -> SiteConfig+currentPatch, getCurrentSet()), tierlist.ts (getPublishedComps(set?), groupCompsByTier, TIER_ORDER), comp.ts (getCompBySlug(slug)). All use the { db } PrismaClient singleton. getPublishedComps(set?) defaults set to SiteConfig.currentSet (returns [] if unconfigured), filters status:PUBLISHED, orders by tier(S,A,B,C,X via enum decl order),publishedAt desc,name; returns lean CompCard rows (main traits ordered + carries only via units where isCarry, each with champion id/name/iconUrl/cost) — comp scalars incl patchIntroducedId/patchUpdatedId come free so cards feed getCompBadges directly. groupCompsByTier(comps) buckets into all 5 fixed bands. getCompBySlug(slug) uses findFirst({slug,status:PUBLISHED}) (NOT findUnique — needs the status filter) and returns null for missing/draft/archived so US-017 can 404; CompDetail includes full tree: patchIntroduced/patchUpdated, traits(trait), units(champion, items(item)) all ordered by order, itemPriority(item), augments(augment); board pos = boardRow/boardCol scalars. Types exported via Prisma.CompGetPayload over Prisma.validator<Prisma.CompInclude>() includes (satisfies/plain object widens orderBy 'asc'->string and breaks GetPayload). Verified: typecheck + lint clean; live-DB smoke (temp draft+archived inserted then removed): getPublishedComps->3 PUBLISHED in S/A/B order with 0 non-PUBLISHED leaked, card[0] 4 traits/2 carries/badges{isNew:true}, explicit set arg=3, unknown set=0, groups S:1 A:1 B:1 C:0 X:0; getCompBySlug->full comp (12 units,7 onBoard,4 itemPriority,3 augments,carry 3 items,items ordered 0,1,2,guide present) and null for nonexistent/draft/archived. Backend-only story — no browser verification in AC. Added queries/ section to src/server/CLAUDE.md."
     },
     {
       "id": "US-013",
@@ -203,8 +203,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added the (public) route group + shared layout. NEW src/app/(public)/layout.tsx (async server component) reads getSiteConfig() and renders <SiteHeader> + <main> + <SiteFooter>; wraps min-h-screen flex-col so the footer sticks to the bottom. Moved the homepage from src/app/page.tsx -> src/app/(public)/page.tsx (route group parens don't change the URL, so it still serves '/'); DELETED the old src/app/page.tsx to avoid a duplicate-'/'-route error. NEW src/components/site-header.tsx (presentational): brand wordmark 'MetaComps' (bg-brand-gradient bg-clip-text text-transparent) linking to '/', nav aria-label 'Navegação principal' with Tierlist ('/') + Builder ('/builder') links, and right-aligned patch metadata ('Patch <version>' in text-primary + 'Última atualização: DD/MM/YYYY'). Header is sticky top-0 with backdrop-blur; container flex-wrap so at 360px the patch block wraps below-right (no horizontal scroll — verified scrollWidth==clientWidth==360). NEW src/components/site-footer.tsx: Riot Games non-affiliation disclaimer. Date formatted via UTC parts (getUTCDate/Month/FullYear) to avoid timezone/hydration drift; both patch/updatedAt are null-guarded (config may be unseeded). GOTCHA: after moving/deleting a page, tsc failed on a STALE .next/types/app/page.ts referencing the old path — `rm -rf .next` then re-run typecheck (dev/build regenerates types). Quality: typecheck exit 0, lint clean. Browser (localhost:3000): desktop 1280x720 + mobile 360x720 snapshots show banner/main/contentinfo with all AC content; only console error is the expected favicon 404."
     },
     {
       "id": "US-014",
@@ -219,8 +219,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tier-list page implemented at src/app/(public)/page.tsx (replaces the placeholder Home). Renders the 5 fixed bands S, A, B, C and Situacional (X-band, chip shows 'X' + heading 'Situacional') in order via groupCompsByTier(getPublishedComps()). Each band is a <section aria-label> with a colored tier chip (bg-tier-{s,a,b,c,x}, dark text-background for contrast) + a 4px colored left border (border-l-4 + border-l-tier-{s,a,b,c,x}); Tailwind classes are written out in full inside a TIER_META map (never interpolated) so the JIT scanner keeps them. Per-band empty state 'Nenhuma comp <Label> neste patch.' (e.g. 'Nenhuma comp C Tier neste patch.', 'Nenhuma comp Situacional neste patch.'). Comps render as minimal name chips for now — US-015 swaps in the full <CompCard> with badges/icons/link. ISR: `export const revalidate = 3600` + data wrapped in `unstable_cache(fn, ['tierlist-groups'], { tags: ['tierlist'] })` so US-038's `revalidateTag('tierlist')` refreshes it; no request-time APIs used, so the route stays static (Next 'Static route' indicator confirmed). Quality: `rm -rf .next` then typecheck exit 0, lint clean. Browser (localhost:3000): DESKTOP 1280x720 — 5 bands in order, S=N.O.V.A. Blitzcrank / A=Meeple Jhin / B=Dark Star Master Yi, C+X empty states; chip bg colors distinct (S rgb(239,67,67) red, A rgb(249,116,21) orange, B rgb(231,176,8) amber, C rgb(33,196,93) green, X rgb(118,135,162) slate), left borders match, no h-scroll (1280==1280). MOBILE 360x720 — bands stack, no h-scroll (360==360). Only console error is the expected favicon 404."
     },
     {
       "id": "US-015",
@@ -235,8 +235,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added src/components/comp-card.tsx (presentational server component). Props: comp (CompCard row from queries/tierlist) + currentPatchId. The WHOLE card is a <Link href={`/comps/${slug}`} aria-label={`Ver comp ${name}`}> so it's keyboard-focusable with the comp name as its accessible name (verified in a11y snapshot) + a focus-visible ring. Shows comp name (h3), carry champions (icon + name, from units where isCarry), and main trait icons with active level (from traits, ordered). Background bg-muted/40; tier-colored 4px LEFT border via a full-class TIER_BORDER map (border-l-tier-{s,a,b,c,x}) — reuses the US-014 no-interpolation Tailwind rule (verified computed left border = rgb(239,67,67)/4px for S). Badges from getCompBadges(comp, currentPatchId): 'Novo' = bg-primary (cyan rgb(0,217,217)) + text-primary-foreground; 'Atualizado' = bg-secondary (teal rgb(20,82,77)) + text-secondary-foreground; Novo precedence handled by the service. ICONS use next/image (avoids the @next/next/no-img-element lint WARNING that plain <img> triggers — that warning would fail the 'No warnings' gate); carry icon = fill in a relative 40px box, trait icon = 14x14. REQUIRED next.config.mjs change: added images.remotePatterns for raw.communitydragon.org (Community Dragon CDN from ddragon.ts) or next/image throws for the unconfigured host — US-042 builds the rest of the image/perf story on top. Wired into the tier-list page: getTierGroups -> getTierListData (now also reads getSiteConfig for currentPatchId, both under the `tierlist` unstable_cache tag so a publish/patch change refreshes badges too); the band's comps.map now renders <CompCard comp currentPatchId/> instead of name chips. Quality: rm -rf .next then typecheck exit 0, lint 'No ESLint warnings or errors'. Browser (localhost:3000): DESKTOP 1280x720 — 3 cards render (S=N.O.V.A. Blitzcrank NOVO, A=Meeple Jhin ATUALIZADO, B=Dark Star Master Yi none), all 18 icons loaded (0 broken, champion naturalWidth 40), card link goes to /comps/<slug>, page stays 'Static route', no h-scroll (1280==1280). MOBILE 360x720 — 3 cards stack, no h-scroll (360==360). Only console error is the expected favicon 404."
     },
     {
       "id": "US-016",
@@ -251,8 +251,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Client-side filtering keeps the tier list STATIC/ISR. The page (src/app/(public)/page.tsx) ships every PUBLISHED comp + currentPatchId (still under the `tierlist` unstable_cache tag) and renders <Suspense fallback={<TierBands/>}><TierListFilters/></Suspense>. Suspense is REQUIRED because TierListFilters uses useSearchParams — with it, the route stays static (dev overlay confirmed 'Static route'). NEW src/lib/tiers.ts holds client-safe TIER_ORDER/groupByTier<T>/TIER_META (type-only Prisma import, erased) so client code groups without pulling in the PrismaClient; src/server/queries/tierlist.ts now re-exports TIER_ORDER and delegates groupCompsByTier to it (single source). NEW src/components/tier-bands.tsx (shared presentational, renders bands+CompCards; hideEmpty prop hides empty bands while filtering, else US-014 per-band empty states). NEW src/components/tier-list-filters.tsx ('use client'): filter state lives ENTIRELY in the URL — repeatable params tier/trait/champion (via searchParams.getAll) + q text; router.replace(scroll:false) on every change. Categories AND, matches within a category OR. Trait/champion options derived from the comps present (deduped by name). Search matches comp name + trait names + carry names. Filters: tier multi-select (S/A/B/C/Situacional), sinergia (trait pills w/ icon), campeão principal (carry pills w/ icon), busca. Empty state 'Nenhuma comp encontrada com os filtros selecionados' + Limpar filtros when a filter is active and nothing matches. Mobile: inline panel hidden (hidden sm:block), a 'Filtros' button (with active-count badge) opens a bottom-sheet drawer (role=dialog, Escape to close, 'Ver resultados (n)' closes it); FilterControls is rendered in BOTH the desktop panel and the drawer — all state is in the URL so they never diverge (the search input uses a wrapping <label>, NOT a fixed id, to avoid a duplicate id across the two instances). Quality: typecheck exit 0, lint 'No ESLint warnings or errors', 7/7 tests pass. Browser (Playwright): DESKTOP 1280x720 — tier=A shows only A band; tier=A + champion=Blitzcrank => no-results empty state; trait=Challenger => S+B; q=jhin (shared-link) pre-fills box + shows Meeple Jhin; typing 'dark' updates URL to ?q=dark and filters to Dark Star; no h-scroll (1280==1280); 'Static route'. MOBILE 360x720 — inline panel hidden, Filtros button shown, drawer opens with search+20 toggles+'Ver resultados', selecting S in drawer => ?tier=S + 'Ver resultados (1)', 'Ver resultados' closes drawer and shows only S band, Filtros button gains count badge; no h-scroll (360==360). 0 console errors."
     },
     {
       "id": "US-017",
@@ -267,8 +267,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 17,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Comp-detail route created at src/app/(public)/comps/[slug]/page.tsx (under the (public) group so it inherits the header/footer). generateStaticParams pre-renders every PUBLISHED comp via new query getPublishedCompSlugs() in src/server/queries/comp.ts (all published slugs, not set-scoped — reused by US-023 sitemap). ISR: `export const revalidate = 3600` + data wrapped in per-slug `unstable_cache(fn, ['comp-detail', slug], { tags: ['comp:'+slug, 'tierlist'] })` — US-038 refreshes one comp via revalidateTag('comp:'+slug); the extra `tierlist` tag means a patch change (US-039, which revalidates tierlist) also refreshes the Novo/Atualizado badges here. `params` is a Promise (Next 15) — awaited. null comp (missing/draft/archived, since getCompBySlug filters status:PUBLISHED) => notFound() (returns never, narrows comp non-null). Header rendered by NEW presentational src/components/comp-header.tsx: tier chip (reuses TIER_META[tier].chipClass, text-background for contrast), name h1, Novo/Atualizado via getCompBadges(comp, currentPatchId), 'S Tier'/'Situacional' label (appends '· Situacional' only when situational && tier!==X to avoid 'Situacional · Situacional'), playstyle + difficulty (DIFFICULTY_LABEL EASY/MEDIUM/HARD -> Fácil/Médio/Difícil), and traits with level (icon + name + level, e.g. 'N.O.V.A. 3') via next/image. US-018..US-022 add carries/items/units/board/augments/guide sections BELOW <CompHeader/> in this same page. Quality: rm -rf .next then typecheck exit 0, lint 'No ESLint warnings or errors', 7/7 tests pass. Browser (Playwright, localhost:3001 — a stale prior-iteration server held 3000): /comps/n-o-v-a-blitzcrank (S) => Tier S chip, h1 'N.O.V.A. Blitzcrank', NOVO badge, 'S Tier', Estilo de jogo: Fast 8, Dificuldade: Difícil, traits N.O.V.A. 3/Anima 2/Challenger 2/Conduit 2, 4 trait icons loaded (0 broken, naturalWidth 32), 'Static route'; /comps/meeple-jhin (A) => ATUALIZADO badge, Dificuldade: Médio, Slow Roll, traits Meeple 3/Sniper 3/Anima 2/Rogue 2; nonexistent slug => HTTP 404 (notFound). Only console error is the expected favicon 404; no h-scroll at 1280 (1280==1280) or 360 (360==360)."
     },
     {
       "id": "US-018",
@@ -282,8 +282,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 18,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added the carries + item-priority sections to the shared comp-detail page (src/app/(public)/comps/[slug]/page.tsx), rendered BELOW <CompHeader/> inside a `mt-8 flex flex-col gap-8` wrapper. TWO new presentational (no 'use client') components in src/components/comp-carries.tsx: <CompCarries units={comp.units}/> and <CompItemPriority items={comp.itemPriority}/> — both take the narrow CompDetail slice (CompDetail['units'] / ['itemPriority']) not the whole comp. CompCarries filters units to isCarry, sorts by carryOrder (nulls last) then unit order, and renders each carry as a row (champion icon+name+star level ★×starLevel in text-primary, items on the right IN their query order; 'Sem itens recomendados' fallback if a carry has none). CompItemPriority renders comp.itemPriority (already ordered by `order`) as an <ol> of item icons separated by a right-chevron SVG (PriorityArrow, aria-hidden) BETWEEN items (n-1 arrows) = the 'setas' order indicator. Tooltips: NEW reusable src/components/icon-tooltip.tsx <IconTooltip src name size? className?/> — a CSS tooltip that shows the item/champion name on hover AND keyboard-focus/touch (wrapper is tabIndex=0 role=img aria-label=name; tooltip span toggles via group-hover/tt + group-focus/tt; decorative inner next/image alt=''; bg-card text-card-foreground ring-border, since --popover==--background is too dark to read). Reused for both carry champion icons (size 48) and all item icons (default 40); US-021 augments should reuse it too. Icons render via next/image (raw.communitydragon.org already whitelisted). Quality: typecheck exit 0, lint 'No ESLint warnings or errors', 7/7 tests pass. Browser (Playwright, dev server on :3001 — a stale server holds :3000): /comps/n-o-v-a-blitzcrank DESKTOP 1280x720 — Carries region shows Bard (★★★, items Adaptive Helm/Archangel's Staff/Bloodthirster) + Blitzcrank (★★★, items Blue Buff/Bramble Vest/Deathblade); Prioridade de itens shows 4 items with 3 chevron arrows between them; all 16 icon <img>s loaded (0 broken, naturalWidth 32); hovering an item sets its tooltip opacity to 1 (verified 'Blue Buff' tooltip visible); page stays 'Static route'; no h-scroll (1280==1280). MOBILE 360x720 — carries stack (champion row on top, items wrap below), item-priority row fits; both sections present; no h-scroll (360==360). Only console error is the expected favicon 404."
     },
     {
       "id": "US-019",
@@ -296,8 +296,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 19,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added the early/core/flex unit lists to the shared comp-detail page. NEW src/components/comp-units.tsx exports <CompUnits units={comp.units}/> (presentational, no 'use client'), rendered BELOW <CompItemPriority/> inside the existing `mt-8 flex flex-col gap-8` wrapper in src/app/(public)/comps/[slug]/page.tsx. Groups comp.units by role into the AC's three sections — 'Early Units' (EARLY), 'Core/Final' (CORE), 'Flex Units' (FLEX) — in that fixed order via a ROLE_SECTIONS map; each role group preserves the query's `order` (units arrive orderBy order asc); empty role sections are omitted and the whole component returns null when there are no units. Each unit is a <UnitCard>: champion icon via the shared <IconTooltip size=56> (name-on-hover/focus, next/image), name (line-clamp-2 text-xs centered), a cost badge (◆ + champion.cost, aria-label 'Custo N') color-coded by TFT cost tier (1 slate/2 emerald/3 sky/4 fuchsia/5 amber via a full-class COST_STYLE map — NO interpolation so Tailwind keeps the classes; fallback amber for cost>5), and '★'×starLevel in text-primary (aria-label 'N estrelas') only WHEN starLevel is set. Cards are w-16 sm:w-20 in a flex-wrap ul so they reflow on mobile. Quality: typecheck exit 0, lint 'No ESLint warnings or errors', 7/7 tests pass. Browser (Playwright, dev server :3001 — stale server holds :3000): /comps/n-o-v-a-blitzcrank DESKTOP 1280x720 — 'Unidades' region with Early Units (Aatrox/Briar/Caitlyn ◆1★), Core/Final (Bel'Veth ◆2, Aurora/Diana ◆3, Aurelion Sol/Corki ◆4, Bard/Blitzcrank ◆5★★★), Flex Units (Cho'Gath ◆1, Akali ◆2); 3 h3 headings in order; 12 unit icons loaded (0 broken, naturalWidth 64); page stays 'Static route'; no h-scroll (1280==1280); 0 console errors. MOBILE 360x720 — 3 sections render, cards wrap into a legible grid, cost colors distinct per tier, stars in cyan; no h-scroll (360==360)."
     },
     {
       "id": "US-020",
@@ -311,8 +311,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 20,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Board positioning added to the shared comp-detail page. NEW src/components/comp-board.tsx exports <CompBoard units={comp.units}/>, rendered below <CompItemPriority/> (above <CompUnits/>) inside the existing `mt-8 flex flex-col gap-8` wrapper in src/app/(public)/comps/[slug]/page.tsx. It is a CLIENT component ('use client') because of the 'Mostrar nomes' toggle (useState) — this does NOT make the page dynamic (no request-time APIs), so the comp route stays 'Static route' (verified). Renders a 4-row × 7-col honeycomb: for each hex it looks up byHex.get(`${row}-${col}`) from units with non-null boardRow/boardCol (0-indexed; off-board EARLY/FLEX with null coords excluded); returns null if no unit is on-board. Layout is percentage-based so it scales to any width with NO horizontal scroll: each cell is w-[13.333%] (=100/7.5) shrink-0 aspect-square, odd rows get pl-[6.667%] (half a hex) for the offset, and rows use marginTop:-2.5% to nest. Hexes use a pointy-top clip-path polygon (50% 0,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%) applied to layered divs (tile-background layer inset-[2px] + image layer inset-[3px], both clipped) so the ring shows as a hex border around a next/image fill icon (raw.communitydragon.org already whitelisted). Empty hexes = bg-muted/30 tiles (form the grid backdrop). CARRY HIGHLIGHT (isCarry): an extra inset-0 bg-brand-gradient glow hex behind + bg-brand-gradient ring + thicker inset-[4px] image inset, so carries show a prominent purple→cyan gradient ring vs the slate-600 ring on other units. 'Mostrar nomes' button (aria-pressed) toggles a name label overlaid at each hex bottom (text-shadow for legibility); label reads 'Ocultar nomes' when on. Board wrapper is mx-auto w-full max-w-md (448px desktop, full width on mobile) in a rounded bordered bg-card/40 panel. Quality: typecheck exit 0, lint 'No ESLint warnings or errors', 7/7 tests pass. Browser (Playwright, dev server :3001 — a stale prior server holds :3000): /comps/n-o-v-a-blitzcrank DESKTOP 1280x720 — 'Posicionamento' region with 7 CORE units at correct hexes (row0 Bel'Veth/Aurora/Diana, row1 Aurelion Sol/Corki, row3 Bard/Blitzcrank — matches seed CORE_HEXES), 7 board icons loaded (0 broken, naturalWidth 64), exactly 2 gradient (carry) hexes (Bard+Blitzcrank), board inner width 448px, page 'Static route', no h-scroll (1280==1280); clicking 'Mostrar nomes' → button becomes 'Ocultar nomes' (aria-pressed true) and all 7 names overlay their hexes. MOBILE 360x720 — board fits 16–344px within the viewport, 7 icons loaded, names truncate gracefully on small hexes, no h-scroll (360==360). 0 console errors."
     },
     {
       "id": "US-021",
@@ -325,8 +325,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 21,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added the augments section to the shared comp-detail page. NEW src/components/comp-augments.tsx exports <CompAugments augments={comp.augments} augmentPriority={comp.augmentPriority}/>, rendered BELOW <CompUnits/> inside the existing `mt-8 flex flex-col gap-8` wrapper in src/app/(public)/comps/[slug]/page.tsx. Presentational (no 'use client'), takes the narrow CompDetail['augments']/['augmentPriority'] slices like the other sections. TWO parts under an 'Augments' <section aria-labelledby>: (1) 'Prioridade de augments' — an <ol> of the comp's augmentPriority categories in order as teal bg-secondary/text-secondary-foreground chips separated by the same aria-hidden right-chevron SVG used by CompItemPriority (n-1 arrows = the ECON>ITEMS>COMBAT indicator); categories mapped to pt-BR labels via a CATEGORY_LABEL Record<AugmentCategory,string> (ECON->Economia, ITEMS->Itens, COMBAT->Combate; AugmentCategory type derived as CompDetail['augmentPriority'][number]). (2) recommended augments list — each augment via the shared <IconTooltip src name/> (US-018) so the augment NAME shows on hover/focus/touch. Returns null only when BOTH augments and augmentPriority are empty. Icons are Community Dragon URLs (raw.communitydragon.org already whitelisted in next.config). Quality: typecheck exit 0, lint 'No ESLint warnings or errors', 7/7 tests pass. Browser (Playwright, dev server :3001 — a stale prior server holds :3000): /comps/n-o-v-a-blitzcrank DESKTOP 1280x720 — 'Augments' region with 'Prioridade de augments' ECONOMIA>ITENS>COMBATE (2 chevrons) + 3 augment icons (Stellar Combo/Ahri's Boon/Anima Commander), all 3 icons loaded (0 broken, naturalWidth 48), tooltip names present in a11y tree, no h-scroll (1280==1280), only console error is expected favicon 404. MOBILE 360x720 — section renders, 3 icons loaded, no h-scroll (360==360). DATA-DRIVEN confirmed: /comps/meeple-jhin shows a DIFFERENT order (COMBATE>ITENS>ECONOMIA) + different augments (Apotheotic Forge/Divine Amendment/Meep King), proving the indicator reads comp.augmentPriority not a hardcoded order."
     },
     {
       "id": "US-022",
@@ -342,8 +342,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 22,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added the guide section to the shared comp-detail page. NEW src/components/comp-guide.tsx exports <CompGuide comp={comp}/>, rendered BELOW <CompAugments/> inside the existing `mt-8 flex flex-col gap-8` wrapper in src/app/(public)/comps/[slug]/page.tsx (takes the whole CompDetail like CompHeader, since it needs the guide scalars + unit/item names). Presentational (no 'use client'). Returns a FRAGMENT of up to three <section>s so each gets the parent's gap-8 spacing uniformly; returns null when the comp has no guide content. THEME 1 'Quando jogar' = a single block from comp.whenToPlay. THEME 2 'Como jogar' = three <h3> subsections in fixed order via a PHASES map — 'Início de jogo' (earlyGame), 'Meio jogo' (midGame), 'Fim de jogo' (lateGame); each phase only renders when its field is non-empty (flatMap type-narrows string|null -> string). NO 'Stage 2/3/4' labels anywhere (verified: body regex /Stage\\s*[234]/ = 0 matches) — the three subsections replace them. Optional 'Dicas' block from comp.tips in a bordered bg-muted/40 card. TEXT HIGHLIGHT ('destaque de nomes de unidades/itens'): collectNames() gathers champion names (comp.units) + item names (unit items + itemPriority) into a Set; highlightNames(text, names) builds a case-insensitive regex of the escaped names sorted LONGEST-FIRST (so 'Aurelion Sol' wins over 'Sol') with letter/number lookbehind+lookahead boundaries (u flag, \\p{L}/\\p{N}) so a name isn't matched inside a larger word, then splits the text and wraps each match in a <mark className='bg-primary/15 text-primary'>. GuideText splits prose on newlines into <p> paragraphs (readable multi-line; seed text is single-line). Trait names (e.g. 'N.O.V.A.') are intentionally NOT highlighted — AC scopes highlight to units/items. Quality: typecheck exit 0, lint 'No ESLint warnings or errors', 7/7 tests pass. Browser (Playwright, dev server :3001 — a stale prior server holds :3000): /comps/n-o-v-a-blitzcrank DESKTOP 1280x720 — 'Quando jogar' region (single block), 'Como jogar' region with h3 subheads ['Início de jogo','Meio jogo','Fim de jogo'] in order, 'Dicas' region; 11 <mark> highlights on champion names (Blitzcrank, Aatrox, Briar, Caitlyn, Bel'Veth, Aurora, Diana); 0 'Stage 2/3/4' labels; page stays 'Static route'; no h-scroll (1280==1280); only console error is the expected favicon 404. MOBILE 360x720 — all three guide sections render, highlights show as cyan inline text, no h-scroll (360==360)."
     },
     {
       "id": "US-023",
@@ -357,8 +357,8 @@
         "Typecheck passes"
       ],
       "priority": 23,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "SEO layer added. NEW src/lib/site.ts (client-safe, no server imports): SITE_URL (from NEXT_PUBLIC_SITE_URL, default https://metacomps.gg, trailing slash stripped), SITE_NAME, SITE_DESCRIPTION, SITE_LOCALE (pt_BR), absoluteUrl(path). Root src/app/layout.tsx metadata now sets metadataBase=new URL(SITE_URL) (so all relative canonical/OG URLs resolve absolute), a title template `%s · MetaComps`, applicationName, and site-wide openGraph(type website)+twitter(summary_large_image) defaults that pages inherit. generateMetadata on /comps/[slug] (page.tsx): title `${name} — ${tierLabel}` (template appends brand), description = comp.whenToPlay (clamped to 160 chars w/ ellipsis) else a synthesized 'Comp de TFT <tier> no patch <v>. Carries: … Sinergias: …', alternates.canonical `/comps/<slug>`, openGraph(type article, url, publishedTime/modifiedTime, title carrying tier+set+patch) + matching twitter card; when comp is null returns { robots:{index:false,follow:false} }. Homepage (public)/page.tsx got a static `metadata = { alternates:{canonical:'/'} }`. app/sitemap.ts (revalidate 3600) lists the homepage + one entry per PUBLISHED comp (new query getPublishedCompsForSitemap() -> {slug,updatedAt}, status:PUBLISHED only, lastModified from updatedAt); app/robots.ts allows all, disallows /admin, points at absoluteUrl('/sitemap.xml') + host. opengraph-image.tsx (1200x630, next/og ImageResponse, flexbox-only inline styles) renders the comp name + a tier badge in the tier color (hex mirrors the globals.css tier tokens) + set/patch + up-to-2 carries; twitter-image.tsx re-exports it so twitter:image is populated too. JSON-LD Article <script> on the comp page (headline, description, datePublished/dateModified, author/publisher=Organization MetaComps, mainEntityOfPage). GOTCHA fixed during runtime verify: getCompData reads through unstable_cache, which JSON-serializes results, so Date fields (publishedAt/updatedAt) come back as STRINGS on cache HITS (real Dates only on the first cache-miss) — calling .toISOString() directly 500s on the 2nd request; added toIso(v)=new Date(v).toISOString() which handles both. Quality: `rm -rf .next` then typecheck exit 0, lint 'No ESLint warnings or errors', 7/7 tests pass. Runtime-verified against the live seeded DB (dev :3000): /robots.txt (Allow /, Disallow /admin, Host+Sitemap=metacomps.gg), /sitemap.xml (homepage + exactly the 3 PUBLISHED comps, no drafts, lastmod present), /comps/n-o-v-a-blitzcrank HTML has <title> w/ template, <link canonical>, meta description, og:title/description/url/type=article/image(1200x630)/image:alt, twitter:card=summary_large_image + twitter:title/description/image, and the Article JSON-LD; og-image + twitter-image both return HTTP 200 image/png, valid PNG magic, 1200x630, non-blank. .env.example documents NEXT_PUBLIC_SITE_URL. AC only requires 'Typecheck passes' (no browser step) but verified anyway."
     },
     {
       "id": "US-024",
@@ -372,8 +372,8 @@
         "Typecheck passes"
       ],
       "priority": 24,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Synergy engine added as a PURE, client-safe module src/lib/synergy.ts (NO imports — runs in server components, the 'use client' builder US-025/026, and the Node test runner alike; sits alongside src/lib/tiers.ts). computeSynergies(units, traits) -> ActiveTrait[]. Inputs: SynergyUnit { championId, traits: string[] } (positioned units — board position is irrelevant to synergy counting so it's omitted) + TraitInfo { key, name, breakpoints: number[] } (the catalog breakpoints). KEY-AGNOSTIC by design: SynergyUnit.traits and TraitInfo.key just need the SAME string key — the catalog references traits by NAME (CatalogChampion.traitNames) while the DB references them by id (ChampionTrait), so the caller picks one and the engine works with either (decoupled from the data source, like the badges service). UNIQUE COUNTING (AC 'nao duplica a mesma unidade'): exported helper countUnitsByTrait(units) dedupes by championId (a duplicate copy of a champion on a 2nd hex adds nothing — skipped) AND collapses a trait repeated on one champion via new Set(unit.traits); both guarded by tests. BREAKPOINT RESOLUTION: normalizeBreakpoints sorts asc + de-dupes + drops non-positive defensively; a trait is active once count >= breakpoints[0]; tier = 1-based index of the highest breakpoint <= count; ActiveTrait carries count (the displayed number e.g. 'Mecha 4'), activeBreakpoint (threshold reached), tier (style tier 1/2/3), nextBreakpoint (null when maxed), maxed. Traits with [] breakpoints (meta-traits like 'Choose Trait') never activate; traits on units but absent from the catalog are ignored; catalog traits with 0 units are skipped. Output sorted for a synergy panel: tier desc, count desc, name asc. Tests: src/lib/synergy.test.ts (17 cases) cover empty board, below-first-breakpoint inactive, activation at tier 1, mid-tier resolution + nextBreakpoint, exactly-on-threshold tier advance, maxed (no next), count above top, single-breakpoint trait, duplicate champion counts once (+ two copies alone don't activate), repeated-trait-on-one-champion, multi-trait champion contributing to all traits, empty-breakpoints never active, unknown trait ignored, full sort order (tier>count>name), name tiebreak, and breakpoint normalization. Verified: npm test -> 24 pass / 0 fail (17 synergy + 7 badges); npm run typecheck exit 0; npm run lint 'No ESLint warnings or errors'. Backend/pure-function story — no browser verification in AC. US-026 SynergyPanel consumes computeSynergies; the builder feeds it placed champions (with catalog traitNames) + catalog trait breakpoints."
     },
     {
       "id": "US-025",
@@ -388,8 +388,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 25,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Public builder shipped at /builder (under the (public) group so it inherits header/footer; nav 'Builder' link already pointed here). NEW server query src/server/queries/catalog.ts getBuilderChampions(set?) -> BuilderChampion[] (id/apiId/name/cost/iconUrl + traits[{id,name,iconUrl}]), set defaults to getCurrentSet(), ordered cost-then-name; returns PLAIN serializable objects (mapped, no Prisma instances/Dates) so it feeds the client component + unstable_cache cleanly. NEW client-safe libs: src/lib/builder.ts (BOARD_ROWS=4/BOARD_COLS=7, HEX_CLIP polygon, PlacedUnit type {id,championId,row,col}, hexKey/unitsByHex, CHAMPION_DND_PREFIX/UNIT_DND_PREFIX drag payloads) and src/lib/champion-cost.ts (costClass() lifted out of comp-units.tsx so the palette + the US-019 unit list share ONE cost-color map — refactored comp-units.tsx to import it, behavior identical). COMPONENTS (src/components/builder/): champion-palette.tsx ('use client', local search + sort state; sort custo/nome/origem/classe — origem=first trait, classe=last trait since the schema has no origin/class flag; search matches champion name OR trait names; draggable champion tiles with color-coded cost badges), builder-board.tsx ('use client', 4x7 honeycomb reusing the comp-board percentage layout so it never h-scrolls; each hex is a button routing clicks to the parent + accepting champion/unit drops, placed units are draggable), builder.tsx ('use client', owns ALL state). INTERACTION MODEL: arm a palette champion (click, aria-pressed, toggles) then click an empty hex to place (or drag a tile onto a hex); with nothing armed, click a placed unit to SELECT it then click another hex to move (swap if occupied) — or drag between hexes; Remover (toolbar, enabled only when a unit is selected) + Delete/Backspace key removes; Escape disarms/deselects. Undo/redo via a SNAPSHOT-HISTORY stack (history: PlacedUnit[][] + cursor; commit() truncates the redo branch; Desfazer/Refazer buttons disable at the ends; Ctrl/Cmd+Z / Ctrl+Shift+Z|Ctrl+Y). Toggles: 'Nomes' (overlays unit names, aria-pressed) and 'Limpar' (empties the board, undoable). Live 'N unidade(s)' count + an aria-live hint line. Unit ids are crypto.randomUUID() (client-only, only in handlers). Page is static+ISR (revalidate=3600, champion list wrapped in unstable_cache tag 'catalog'); metadata sets title 'Builder' + canonical '/builder'. Quality: rm -rf .next; typecheck exit 0; lint 'No ESLint warnings or errors'; 24/24 tests pass. Browser (Playwright, localhost:3000): DESKTOP 1280x720 — page 'Static route', 28 empty hexes + 63-champ palette sorted by cost; armed Aatrox (hint+aria-pressed) placed at (1,1) => '1 unidade'; placed Jhin (2,3) => '2 unidades'; disarmed + selected Aatrox (Remover enabled) + clicked empty hex => moved to (4,7); Desfazer => back to (1,1) + Refazer enabled; Refazer => (4,7); select + Remover => Aatrox gone ('1 unidade', Remover re-disabled); Nomes => 'Ocultar nomes' + Jhin name overlay shows; search 'jhin' => 1 result, search 'stargazer' => 6 champs none name-matching (trait search works); sort Nome => alphabetical, Origem => trait-grouped; Limpar => '0 unidades' + Undo still enabled; no h-scroll (1280==1280). MOBILE 360x720 — board+palette stack, placed Aurora (2,4), no h-scroll (360==360). Only console error is the expected favicon 404. US-026 (stars/team-cost/synergy panel), US-027 (items/augments) and US-028 (share via URL code) build on this Builder state; add per-unit fields to PlacedUnit and a getBuilderTraits() query as needed."
     },
     {
       "id": "US-026",

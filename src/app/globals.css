@@ -1,3 +1,54 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* Base theme (tftlab dark slate + cyan accent) */
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 213 31% 91%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
+
+    --primary: 180 100% 42.5%;
+    --primary-foreground: 224 71% 4%;
+
+    --secondary: 175 60% 20%;
+    --secondary-foreground: 213 31% 91%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 213 31% 91%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 213 31% 91%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 180 100% 42.5%;
+
+    --radius: 0.5rem;
+
+    /* Tier colors */
+    --tier-s: 0 84% 60%;
+    --tier-a: 25 95% 53%;
+    --tier-b: 45 93% 47%;
+    --tier-c: 142 71% 45%;
+    --tier-x: 217 19% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

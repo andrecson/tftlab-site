@@ -1,0 +1,318 @@
+// Prisma schema for MetaComps
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Catalog models (US-004)
+// Game data imported from Data Dragon. Each entity is keyed by its Data Dragon
+// `apiId` scoped to a `set`, so the same conceptual entity across sets stays
+// distinct. The surrogate `id` (cuid) is what relations reference.
+// ---------------------------------------------------------------------------
+
+enum ItemType {
+  COMPONENT
+  COMPLETED
+  ARTIFACT
+  RADIANT
+  EMBLEM
+  SUPPORT
+  OTHER
+}
+
+model Champion {
+  id        String          @id @default(cuid())
+  apiId     String
+  name      String
+  cost      Int
+  iconUrl   String
+  set       String
+  traits    ChampionTrait[]
+  compUnits CompUnit[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([apiId, set])
+  @@index([set])
+}
+
+model Item {
+  id             String             @id @default(cuid())
+  apiId          String
+  name           String
+  iconUrl        String
+  type           ItemType
+  set            String
+  compUnitItems  CompUnitItem[]
+  itemPriorities CompItemPriority[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([apiId, set])
+  @@index([set])
+}
+
+model Trait {
+  id          String          @id @default(cuid())
+  apiId       String
+  name        String
+  iconUrl     String
+  set         String
+  breakpoints Json
+  champions   ChampionTrait[]
+  compTraits  CompTrait[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([apiId, set])
+  @@index([set])
+}
+
+model Augment {
+  id           String        @id @default(cuid())
+  apiId        String
+  name         String
+  iconUrl      String
+  set          String
+  tier         String?
+  compAugments CompAugment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([apiId, set])
+  @@index([set])
+}
+
+model ChampionTrait {
+  id         String   @id @default(cuid())
+  championId String
+  traitId    String
+  champion   Champion @relation(fields: [championId], references: [id], onDelete: Cascade)
+  trait      Trait    @relation(fields: [traitId], references: [id], onDelete: Cascade)
+
+  @@unique([championId, traitId])
+  @@index([traitId])
+}
+
+// ---------------------------------------------------------------------------
+// Patch & SiteConfig (US-005)
+// A `Patch` is a balance version (e.g. "14.3") within a TFT set. `SiteConfig`
+// is a singleton row (id = 1) holding the global "current set / current patch",
+// used to scope public queries and derive Novo/Atualizado badges.
+// ---------------------------------------------------------------------------
+
+model Patch {
+  id              String             @id @default(cuid())
+  version         String             @unique
+  set             String
+  releasedAt      DateTime
+  createdAt       DateTime           @default(now())
+  siteConfigs     SiteConfig[]
+  compsIntroduced Comp[]             @relation("PatchIntroduced")
+  compsUpdated    Comp[]             @relation("PatchUpdated")
+  tierSnapshots   CompTierSnapshot[]
+
+  @@index([set])
+}
+
+model SiteConfig {
+  id             Int      @id @default(1)
+  currentSet     String
+  currentPatchId String?
+  currentPatch   Patch?   @relation(fields: [currentPatchId], references: [id])
+  updatedAt      DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Comp (US-006)
+// A curated TFT composition. `slug` is the public URL key. A comp is tied to a
+// `set` and a `tier`, has a moderation `status`, an optional play guide split
+// into Quando jogar (whenToPlay) + Como jogar (earlyGame/midGame/lateGame), and
+// is stamped with the `patchIntroduced` it first appeared in and an optional
+// `patchUpdated` for its last revision (drives the Novo/Atualizado badges).
+// Join tables (traits/units/items/augments/tier history) arrive in US-007.
+// ---------------------------------------------------------------------------
+
+enum Tier {
+  S
+  A
+  B
+  C
+  X
+}
+
+enum CompStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum AugmentCategory {
+  ECON
+  ITEMS
+  COMBAT
+}
+
+model Comp {
+  id                String             @id @default(cuid())
+  slug              String             @unique
+  name              String
+  set               String
+  tier              Tier
+  situational       Boolean            @default(false)
+  status            CompStatus         @default(DRAFT)
+  playstyle         String?
+  difficulty        Difficulty         @default(MEDIUM)
+  whenToPlay        String?
+  earlyGame         String?
+  midGame           String?
+  lateGame          String?
+  tips              String?
+  augmentPriority   AugmentCategory[]
+  patchIntroducedId String
+  patchIntroduced   Patch              @relation("PatchIntroduced", fields: [patchIntroducedId], references: [id])
+  patchUpdatedId    String?
+  patchUpdated      Patch?             @relation("PatchUpdated", fields: [patchUpdatedId], references: [id])
+  traits            CompTrait[]
+  units             CompUnit[]
+  itemPriority      CompItemPriority[]
+  augments          CompAugment[]
+  tierSnapshots     CompTierSnapshot[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  publishedAt       DateTime?
+
+  @@index([set, status, tier])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Comp join tables (US-007)
+// Link a Comp to its traits, units (with board positions/stars/carry), the
+// items equipped per unit, the overall item priority, recommended augments,
+// and the per-patch tier history. All children of a Comp (and of a CompUnit)
+// cascade-delete so removing a comp/unit cleans up its dependents.
+// ---------------------------------------------------------------------------
+
+enum UnitRole {
+  EARLY
+  CORE
+  FLEX
+}
+
+model CompTrait {
+  id      String @id @default(cuid())
+  compId  String
+  traitId String
+  level   Int
+  order   Int
+  comp    Comp   @relation(fields: [compId], references: [id], onDelete: Cascade)
+  trait   Trait  @relation(fields: [traitId], references: [id], onDelete: Cascade)
+
+  @@unique([compId, traitId])
+  @@index([traitId])
+}
+
+model CompUnit {
+  id         String         @id @default(cuid())
+  compId     String
+  championId String
+  role       UnitRole
+  isCarry    Boolean        @default(false)
+  carryOrder Int?
+  starLevel  Int?
+  boardRow   Int?
+  boardCol   Int?
+  order      Int
+  comp       Comp           @relation(fields: [compId], references: [id], onDelete: Cascade)
+  champion   Champion       @relation(fields: [championId], references: [id], onDelete: Cascade)
+  items      CompUnitItem[]
+
+  @@unique([compId, boardRow, boardCol])
+  @@index([compId])
+  @@index([championId])
+}
+
+model CompUnitItem {
+  id         String   @id @default(cuid())
+  compUnitId String
+  itemId     String
+  order      Int
+  compUnit   CompUnit @relation(fields: [compUnitId], references: [id], onDelete: Cascade)
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([compUnitId])
+  @@index([itemId])
+}
+
+model CompItemPriority {
+  id     String @id @default(cuid())
+  compId String
+  itemId String
+  order  Int
+  comp   Comp   @relation(fields: [compId], references: [id], onDelete: Cascade)
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([compId, itemId])
+  @@index([compId])
+  @@index([itemId])
+}
+
+model CompAugment {
+  id        String  @id @default(cuid())
+  compId    String
+  augmentId String
+  order     Int
+  comp      Comp    @relation(fields: [compId], references: [id], onDelete: Cascade)
+  augment   Augment @relation(fields: [augmentId], references: [id], onDelete: Cascade)
+
+  @@unique([compId, augmentId])
+  @@index([compId])
+  @@index([augmentId])
+}
+
+model CompTierSnapshot {
+  id      String @id @default(cuid())
+  compId  String
+  patchId String
+  tier    Tier
+  comp    Comp   @relation(fields: [compId], references: [id], onDelete: Cascade)
+  patch   Patch  @relation(fields: [patchId], references: [id], onDelete: Cascade)
+
+  @@unique([compId, patchId])
+  @@index([patchId])
+}
+
+// ---------------------------------------------------------------------------
+// User (US-008)
+// Authentication for the curator admin panel only (there is no public sign-up).
+// `role` gates access (ADMIN vs EDITOR); `passwordHash` is optional so users can
+// also be provisioned for OAuth/credential flows added later (Auth.js, US-030).
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  ADMIN
+  EDITOR
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  role         UserRole @default(EDITOR)
+  passwordHash String?
+  createdAt    DateTime @default(now())
+}
