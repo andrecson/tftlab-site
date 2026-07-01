@@ -77,8 +77,13 @@ export function ItemPanel({
         </span>
       </div>
 
-      {/* Tabs by item family. */}
-      <div role="tablist" aria-label="Categorias de itens" className="flex flex-wrap gap-1">
+      {/* Tabs by item family — tftacademy-style: solid pill for the active
+          tab, plain text for the rest (kept in the site's cyan palette). */}
+      <div
+        role="tablist"
+        aria-label="Categorias de itens"
+        className="flex flex-wrap items-center gap-x-1 gap-y-0.5"
+      >
         {ITEM_TABS.map((t) => {
           const active = t.key === tab;
           return (
@@ -88,10 +93,10 @@ export function ItemPanel({
               role="tab"
               aria-selected={active}
               onClick={() => setTab(t.key)}
-              className={`rounded-md px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 active
-                  ? "bg-primary/15 text-primary ring-1 ring-primary/40"
-                  : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {t.label}
