@@ -134,7 +134,7 @@ export function ChampionPalette({
           Nenhum campeão encontrado.
         </p>
       ) : (
-        <ul className="grid max-h-[28rem] grid-cols-5 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-9">
+        <ul className="grid max-h-[28rem] grid-cols-6 gap-1 overflow-y-auto pr-1 sm:grid-cols-7 md:grid-cols-9 lg:grid-cols-10 xl:grid-cols-12">
           {visible.map((champion) => {
             const armed = champion.id === armedChampionId;
             return (
@@ -153,7 +153,7 @@ export function ChampionPalette({
                   aria-pressed={armed}
                   aria-label={`${champion.name}, custo ${champion.cost}`}
                   title={`${champion.name} — custo ${champion.cost}`}
-                  className={`flex w-full flex-col items-center gap-1 rounded-md border p-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  className={`flex w-full flex-col items-center gap-0.5 rounded-md border p-1 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     armed
                       ? "border-primary bg-primary/10"
                       : "border-transparent bg-muted/40 hover:border-border hover:bg-muted"
@@ -168,11 +168,11 @@ export function ChampionPalette({
                       src={champion.iconUrl}
                       alt=""
                       fill
-                      sizes="72px"
+                      sizes="56px"
                       className="object-cover"
                     />
                   </span>
-                  <span className="line-clamp-1 w-full text-[11px] font-medium leading-tight text-foreground">
+                  <span className="line-clamp-1 w-full text-[10px] font-medium leading-tight text-foreground">
                     {champion.name}
                   </span>
                 </button>
