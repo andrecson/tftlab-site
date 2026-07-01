@@ -652,19 +652,20 @@ export function Builder({
               onRemoveItem={removeUnitItem}
             />
           </div>
+          {augments.length > 0 ? (
+            <div className="w-full lg:w-56 lg:shrink-0">
+              <AugmentPicker
+                augments={augments}
+                augmentsById={augmentsById}
+                selected={selectedAugments}
+                onToggle={handleToggleAugment}
+              />
+            </div>
+          ) : null}
         </div>
 
-        <ItemPanel
-          items={items}
-          championName={selectedChampion ? selectedChampion.name : null}
-          equipped={selectedUnit ? selectedUnit.items : []}
-          onEquip={(itemId) => {
-            if (selectedUnit) equipItem(selectedUnit.id, itemId);
-          }}
-        />
-
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-[3]">
             {champions.length === 0 ? (
               <p className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
                 Catálogo de campeões indisponível.
@@ -678,16 +679,16 @@ export function Builder({
             )}
           </div>
 
-          {augments.length > 0 ? (
-            <div className="w-full lg:w-80 lg:shrink-0">
-              <AugmentPicker
-                augments={augments}
-                augmentsById={augmentsById}
-                selected={selectedAugments}
-                onToggle={handleToggleAugment}
-              />
-            </div>
-          ) : null}
+          <div className="min-w-0 flex-[2]">
+            <ItemPanel
+              items={items}
+              championName={selectedChampion ? selectedChampion.name : null}
+              equipped={selectedUnit ? selectedUnit.items : []}
+              onEquip={(itemId) => {
+                if (selectedUnit) equipItem(selectedUnit.id, itemId);
+              }}
+            />
+          </div>
         </div>
     </div>
   );

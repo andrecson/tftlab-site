@@ -124,7 +124,7 @@ export function ItemPanel({
           Nenhum item encontrado.
         </p>
       ) : (
-        <ul className="grid max-h-64 grid-cols-6 gap-2 overflow-y-auto pr-1 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
+        <ul className="grid max-h-[28rem] grid-cols-5 gap-2 overflow-y-auto pr-1 sm:grid-cols-6 md:grid-cols-6 lg:grid-cols-7">
           {visible.map((item) => (
             <li key={item.id}>
               <button
