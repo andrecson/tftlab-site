@@ -55,19 +55,27 @@ export function SiteHeader({ patchVersion, updatedAt }: SiteHeaderProps) {
           </nav>
         </div>
 
-        {(patchVersion || updatedAt) && (
-          <div className="text-right text-xs leading-tight text-muted-foreground">
-            {patchVersion && (
-              <p>
-                Patch{" "}
-                <span className="font-semibold text-primary">
-                  {patchVersion}
-                </span>
-              </p>
-            )}
-            {updatedAt && <p>Última atualização: {formatDate(updatedAt)}</p>}
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          {(patchVersion || updatedAt) && (
+            <div className="text-right text-xs leading-tight text-muted-foreground">
+              {patchVersion && (
+                <p>
+                  Patch{" "}
+                  <span className="font-semibold text-primary">
+                    {patchVersion}
+                  </span>
+                </p>
+              )}
+              {updatedAt && <p>Última atualização: {formatDate(updatedAt)}</p>}
+            </div>
+          )}
+          <Link
+            href="/admin/login"
+            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+          >
+            Entrar
+          </Link>
+        </div>
       </div>
     </header>
   );
