@@ -6,13 +6,15 @@ import {
   BOARD_COLS,
   BOARD_ROWS,
   CHAMPION_DND_PREFIX,
+  clampStars,
   HEX_CLIP,
   hexKey,
+  ITEM_DND_PREFIX,
   UNIT_DND_PREFIX,
   unitsByHex,
 } from "@/lib/builder";
 import type { PlacedUnit } from "@/lib/builder";
-import type { BuilderChampion } from "@/server/queries/catalog";
+import type { BuilderChampion, BuilderItem } from "@/server/queries/catalog";
 
 /**
  * Interactive builder board (US-025).
@@ -29,12 +31,14 @@ import type { BuilderChampion } from "@/server/queries/catalog";
 interface BuilderBoardProps {
   units: PlacedUnit[];
   championsById: Map<string, BuilderChampion>;
+  itemsById: Map<string, BuilderItem>;
   showNames: boolean;
   armedChampionId: string | null;
   selectedUnitId: string | null;
   onHexClick: (row: number, col: number) => void;
   onDropChampion: (championId: string, row: number, col: number) => void;
   onMoveUnit: (unitId: string, row: number, col: number) => void;
+  onDropItem: (itemId: string, row: number, col: number) => void;
 }
 
 interface HexProps {
@@ -42,12 +46,14 @@ interface HexProps {
   col: number;
   unit: PlacedUnit | null;
   champion: BuilderChampion | null;
+  items: BuilderItem[];
   showName: boolean;
   armed: boolean;
   selected: boolean;
   onClick: () => void;
   onDropChampion: (championId: string, row: number, col: number) => void;
   onMoveUnit: (unitId: string, row: number, col: number) => void;
+  onDropItem: (itemId: string, row: number, col: number) => void;
 }
 
 function Hex({
@@ -55,15 +61,18 @@ function Hex({
   col,
   unit,
   champion,
+  items,
   showName,
   armed,
   selected,
   onClick,
   onDropChampion,
   onMoveUnit,
+  onDropItem,
 }: HexProps) {
+  const stars = unit ? clampStars(unit.stars) : 1;
   const label = champion
-    ? `${champion.name} — linha ${row + 1}, coluna ${col + 1}`
+    ? `${champion.name}, ${stars} estrela${stars > 1 ? "s" : ""} — linha ${row + 1}, coluna ${col + 1}`
     : `Hex vazio linha ${row + 1}, coluna ${col + 1}`;
 
   const ringClass = selected
@@ -92,6 +101,8 @@ function Hex({
             onDropChampion(data.slice(CHAMPION_DND_PREFIX.length), row, col);
           } else if (data.startsWith(UNIT_DND_PREFIX)) {
             onMoveUnit(data.slice(UNIT_DND_PREFIX.length), row, col);
+          } else if (data.startsWith(ITEM_DND_PREFIX)) {
+            onDropItem(data.slice(ITEM_DND_PREFIX.length), row, col);
           }
         }}
         draggable={unit !== null}
@@ -124,6 +135,32 @@ function Hex({
             />
           </span>
         ) : null}
+        {champion ? (
+          <span
+            className="pointer-events-none absolute inset-x-0 top-[6%] text-center text-[9px] leading-none text-amber-300 [text-shadow:0_1px_1px_rgb(0_0_0)]"
+            aria-hidden="true"
+          >
+            {"★".repeat(stars)}
+          </span>
+        ) : null}
+        {champion && items.length > 0 ? (
+          <span className="pointer-events-none absolute inset-x-0 bottom-[16%] flex items-end justify-center gap-[3%] px-[6%]">
+            {items.map((item, index) => (
+              <span
+                key={`${item.id}-${index}`}
+                className="relative block aspect-square w-[24%] overflow-hidden rounded-[2px] ring-1 ring-black/70"
+              >
+                <Image
+                  src={item.iconUrl}
+                  alt=""
+                  fill
+                  sizes="16px"
+                  className="object-cover"
+                />
+              </span>
+            ))}
+          </span>
+        ) : null}
         {champion && showName ? (
           <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate px-0.5 text-center text-[8px] font-semibold leading-tight text-foreground [text-shadow:0_1px_2px_rgb(0_0_0)]">
             {champion.name}
@@ -137,12 +174,14 @@ function Hex({
 export function BuilderBoard({
   units,
   championsById,
+  itemsById,
   showNames,
   armedChampionId,
   selectedUnitId,
   onHexClick,
   onDropChampion,
   onMoveUnit,
+  onDropItem,
 }: BuilderBoardProps) {
   const byHex = unitsByHex(units);
 
@@ -160,6 +199,11 @@ export function BuilderBoard({
               const champion = unit
                 ? (championsById.get(unit.championId) ?? null)
                 : null;
+              const items = unit
+                ? unit.items
+                    .map((id) => itemsById.get(id))
+                    .filter((item): item is BuilderItem => item !== undefined)
+                : [];
               return (
                 <Hex
                   key={col}
@@ -167,12 +211,14 @@ export function BuilderBoard({
                   col={col}
                   unit={unit}
                   champion={champion}
+                  items={items}
                   showName={showNames}
                   armed={armedChampionId !== null}
                   selected={unit !== null && unit.id === selectedUnitId}
                   onClick={() => onHexClick(row, col)}
                   onDropChampion={onDropChampion}
                   onMoveUnit={onMoveUnit}
+                  onDropItem={onDropItem}
                 />
               );
             })}

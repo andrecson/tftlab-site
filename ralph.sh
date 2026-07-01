@@ -48,6 +48,18 @@ if [[ "$TOOL" != "amp" && "$TOOL" != "claude" ]]; then
 fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# --- Trava de concorrência: impede dois Ralph no mesmo diretório ---
+# Abre um lock exclusivo no FD 9; se outro processo já o segura, aborta na hora.
+# O lock é liberado sozinho quando o script termina (o FD fecha).
+RALPH_LOCK="${RALPH_LOCK:-$SCRIPT_DIR/.ralph.lock}"
+exec 9>"$RALPH_LOCK"
+if ! flock -n 9; then
+  echo "Erro: já existe um Ralph rodando neste diretório ($SCRIPT_DIR)."
+  echo "      Verifique com: pgrep -af ralph.sh"
+  echo "      (lock: $RALPH_LOCK)"
+  exit 1
+fi
+
 # Caminhos overrideáveis por env var (fallback p/ o diretório do script)
 PRD_FILE="${PRD_FILE:-$SCRIPT_DIR/prd.json}"
 PROGRESS_FILE="${PROGRESS_FILE:-$SCRIPT_DIR/progress.txt}"
@@ -107,7 +119,23 @@ echo "Starting Ralph - Tool: $TOOL - Max iterations: $MAX_ITERATIONS"
 echo "  PRD_FILE:      $PRD_FILE"
 echo "  PROGRESS_FILE: $PROGRESS_FILE"
 
+# Stop gracioso: durante a execucao, rode `touch "$STOP_FILE"` para o Ralph parar
+# ao terminar a iteracao ATUAL (nao interrompe nada no meio). Limpamos qualquer
+# sinal antigo aqui no inicio para nao abortar logo de cara.
+STOP_FILE="${STOP_FILE:-$SCRIPT_DIR/.ralph.stop}"
+rm -f "$STOP_FILE"
+echo "  STOP_FILE:     $STOP_FILE"
+echo "  (para parar apos a iteracao atual: touch \"$STOP_FILE\")"
+
 for i in $(seq 1 $MAX_ITERATIONS); do
+  # Pedido de stop gracioso? A iteracao anterior ja terminou; para antes de iniciar a proxima.
+  if [ -f "$STOP_FILE" ]; then
+    echo ""
+    echo "Stop solicitado: encontrei $STOP_FILE. Encerrando sem iniciar nova iteracao."
+    rm -f "$STOP_FILE"
+    exit 0
+  fi
+
   echo ""
   echo "==============================================================="
   echo "  Ralph Iteration $i of $MAX_ITERATIONS ($TOOL)"

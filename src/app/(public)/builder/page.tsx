@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 
 import { Builder } from "@/components/builder/builder";
-import { getBuilderChampions } from "@/server/queries/catalog";
+import {
+  getBuilderAugments,
+  getBuilderChampions,
+  getBuilderItems,
+  getBuilderTraits,
+} from "@/server/queries/catalog";
 
 /**
  * Public builder page (US-025) — served at `/builder`.
@@ -23,15 +28,24 @@ export const metadata: Metadata = {
   alternates: { canonical: "/builder" },
 };
 
-/** Cached champion catalog for the builder palette. */
+/**
+ * Cached catalog for the builder: champion palette + trait breakpoints + the
+ * item panel and augment picker catalog (US-027). All are plain (no Date) so the
+ * JSON cache is safe.
+ */
 const getBuilderData = unstable_cache(
-  () => getBuilderChampions(),
-  ["builder-champions"],
+  async () => ({
+    champions: await getBuilderChampions(),
+    traits: await getBuilderTraits(),
+    items: await getBuilderItems(),
+    augments: await getBuilderAugments(),
+  }),
+  ["builder-catalog"],
   { tags: ["catalog"] },
 );
 
 export default async function BuilderPage() {
-  const champions = await getBuilderData();
+  const { champions, traits, items, augments } = await getBuilderData();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -44,7 +58,12 @@ export default async function BuilderPage() {
         </p>
       </header>
 
-      <Builder champions={champions} />
+      <Builder
+        champions={champions}
+        traits={traits}
+        items={items}
+        augments={augments}
+      />
     </div>
   );
 }

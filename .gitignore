@@ -34,3 +34,7 @@ next-env.d.ts
 
 # prisma
 /prisma/*.db
+
+# lock de concorrencia do ralph.sh
+.ralph.lock
+.ralph.stop

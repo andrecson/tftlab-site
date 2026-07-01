@@ -2,10 +2,29 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { AugmentPicker } from "@/components/builder/augment-picker";
 import { BuilderBoard } from "@/components/builder/builder-board";
 import { ChampionPalette } from "@/components/builder/champion-palette";
+import { ItemPanel } from "@/components/builder/item-panel";
+import { SynergyPanel } from "@/components/builder/synergy-panel";
+import {
+  addUnitItem,
+  MAX_ITEMS,
+  MAX_STARS,
+  MIN_STARS,
+  removeUnitItemAt,
+  teamGoldValue,
+  toggleAugment,
+} from "@/lib/builder";
 import type { PlacedUnit } from "@/lib/builder";
-import type { BuilderChampion } from "@/server/queries/catalog";
+import { computeSynergies } from "@/lib/synergy";
+import type { SynergyUnit, TraitInfo } from "@/lib/synergy";
+import type {
+  BuilderAugment,
+  BuilderChampion,
+  BuilderItem,
+  BuilderTraitInfo,
+} from "@/server/queries/catalog";
 
 /**
  * Public builder (US-025).
@@ -27,13 +46,32 @@ function newUnitId(): string {
 const TOOLBAR_BUTTON =
   "inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-muted/40";
 
-export function Builder({ champions }: { champions: BuilderChampion[] }) {
+/** Star levels a unit can be set to (1–3). */
+const STAR_LEVELS = Array.from(
+  { length: MAX_STARS - MIN_STARS + 1 },
+  (_, i) => MIN_STARS + i,
+);
+
+export function Builder({
+  champions,
+  traits,
+  items,
+  augments,
+}: {
+  champions: BuilderChampion[];
+  traits: BuilderTraitInfo[];
+  items: BuilderItem[];
+  augments: BuilderAugment[];
+}) {
   // Snapshot history for undo/redo. `history[cursor]` is the live board.
   const [history, setHistory] = useState<PlacedUnit[][]>([[]]);
   const [cursor, setCursor] = useState(0);
   const [armedChampionId, setArmedChampionId] = useState<string | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [showNames, setShowNames] = useState(false);
+  // Board-level augment selection (up to MAX_AUGMENTS). Not part of the unit
+  // undo/redo history — it's an independent, comp-wide choice.
+  const [selectedAugments, setSelectedAugments] = useState<string[]>([]);
 
   const units = history[cursor];
 
@@ -42,6 +80,53 @@ export function Builder({ champions }: { champions: BuilderChampion[] }) {
     for (const champion of champions) map.set(champion.id, champion);
     return map;
   }, [champions]);
+
+  const traitsById = useMemo(() => {
+    const map = new Map<string, BuilderTraitInfo>();
+    for (const trait of traits) map.set(trait.id, trait);
+    return map;
+  }, [traits]);
+
+  const itemsById = useMemo(() => {
+    const map = new Map<string, BuilderItem>();
+    for (const item of items) map.set(item.id, item);
+    return map;
+  }, [items]);
+
+  const augmentsById = useMemo(() => {
+    const map = new Map<string, BuilderAugment>();
+    for (const augment of augments) map.set(augment.id, augment);
+    return map;
+  }, [augments]);
+
+  // Trait breakpoints for the synergy engine, keyed by trait id (the same key
+  // `getBuilderChampions` puts on each champion trait).
+  const traitInfos = useMemo<TraitInfo[]>(
+    () =>
+      traits.map((trait) => ({
+        key: trait.id,
+        name: trait.name,
+        breakpoints: trait.breakpoints,
+      })),
+    [traits],
+  );
+
+  // Recomputed on every place/move/remove so the panel stays live.
+  const activeTraits = useMemo(() => {
+    const synergyUnits: SynergyUnit[] = units.map((unit) => ({
+      championId: unit.championId,
+      traits: (championsById.get(unit.championId)?.traits ?? []).map(
+        (trait) => trait.id,
+      ),
+    }));
+    return computeSynergies(synergyUnits, traitInfos);
+  }, [championsById, traitInfos, units]);
+
+  // Total gold value of the board (accounts for star levels).
+  const teamValue = useMemo(
+    () => teamGoldValue(units, (id) => championsById.get(id)?.cost ?? 0),
+    [championsById, units],
+  );
 
   const canUndo = cursor > 0;
   const canRedo = cursor < history.length - 1;
@@ -59,7 +144,7 @@ export function Builder({ champions }: { champions: BuilderChampion[] }) {
   const placeChampion = useCallback(
     (championId: string, row: number, col: number) => {
       const next = units.filter((u) => !(u.row === row && u.col === col));
-      next.push({ id: newUnitId(), championId, row, col });
+      next.push({ id: newUnitId(), championId, row, col, stars: 1, items: [] });
       commit(next);
     },
     [commit, units],
@@ -132,6 +217,63 @@ export function Builder({ champions }: { champions: BuilderChampion[] }) {
     [moveUnit],
   );
 
+  // Set the star level (1–3) of a placed unit.
+  const setUnitStars = useCallback(
+    (unitId: string, stars: number) => {
+      const target = units.find((u) => u.id === unitId);
+      if (!target || target.stars === stars) return;
+      commit(units.map((u) => (u.id === unitId ? { ...u, stars } : u)));
+    },
+    [commit, units],
+  );
+
+  // Equip an item on a unit (no-op when the unit is missing or already full).
+  const equipItem = useCallback(
+    (unitId: string, itemId: string) => {
+      const target = units.find((u) => u.id === unitId);
+      if (!target || target.items.length >= MAX_ITEMS) return;
+      commit(
+        units.map((u) =>
+          u.id === unitId ? { ...u, items: addUnitItem(u.items, itemId) } : u,
+        ),
+      );
+    },
+    [commit, units],
+  );
+
+  // Remove the item at `index` from a unit.
+  const removeUnitItem = useCallback(
+    (unitId: string, index: number) => {
+      const target = units.find((u) => u.id === unitId);
+      if (!target || index < 0 || index >= target.items.length) return;
+      commit(
+        units.map((u) =>
+          u.id === unitId
+            ? { ...u, items: removeUnitItemAt(u.items, index) }
+            : u,
+        ),
+      );
+    },
+    [commit, units],
+  );
+
+  // Drop an item onto a hex: equip it on whatever unit is there and select it.
+  const handleDropItem = useCallback(
+    (itemId: string, row: number, col: number) => {
+      if (!itemsById.has(itemId)) return;
+      const target = units.find((u) => u.row === row && u.col === col);
+      if (!target) return;
+      setSelectedUnitId(target.id);
+      equipItem(target.id, itemId);
+    },
+    [equipItem, itemsById, units],
+  );
+
+  // Toggle a board augment (add/remove, capped at MAX_AUGMENTS).
+  const handleToggleAugment = useCallback((augmentId: string) => {
+    setSelectedAugments((prev) => toggleAugment(prev, augmentId));
+  }, []);
+
   const removeSelected = useCallback(() => {
     if (!selectedUnitId) return;
     commit(units.filter((u) => u.id !== selectedUnitId));
@@ -191,10 +333,11 @@ export function Builder({ champions }: { champions: BuilderChampion[] }) {
   const armedChampion = armedChampionId
     ? (championsById.get(armedChampionId) ?? null)
     : null;
-  const selectedChampion = selectedUnitId
-    ? (championsById.get(
-        units.find((u) => u.id === selectedUnitId)?.championId ?? "",
-      ) ?? null)
+  const selectedUnit = selectedUnitId
+    ? (units.find((u) => u.id === selectedUnitId) ?? null)
+    : null;
+  const selectedChampion = selectedUnit
+    ? (championsById.get(selectedUnit.championId) ?? null)
     : null;
 
   let hint: string;
@@ -250,8 +393,44 @@ export function Builder({ champions }: { champions: BuilderChampion[] }) {
           >
             Limpar
           </button>
-          <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-            {units.length} unidade{units.length === 1 ? "" : "s"}
+
+          {selectedUnit ? (
+            <div
+              role="group"
+              aria-label="Nível de estrela"
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-1"
+            >
+              <span className="text-xs text-muted-foreground">Estrelas:</span>
+              {STAR_LEVELS.map((level) => {
+                const active = selectedUnit.stars === level;
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setUnitStars(selectedUnit.id, level)}
+                    aria-pressed={active}
+                    aria-label={`${level} estrela${level > 1 ? "s" : ""}`}
+                    className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold leading-none tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      active
+                        ? "bg-amber-400/20 text-amber-200 ring-1 ring-amber-300/50"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {level}★
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          <span className="ml-auto flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+            <span>
+              {units.length} unidade{units.length === 1 ? "" : "s"}
+            </span>
+            <span aria-label={`Valor do time: ${teamValue} de ouro`}>
+              Valor:{" "}
+              <span className="font-semibold text-amber-300">◆{teamValue}</span>
+            </span>
           </span>
         </div>
 
@@ -262,16 +441,35 @@ export function Builder({ champions }: { champions: BuilderChampion[] }) {
         <BuilderBoard
           units={units}
           championsById={championsById}
+          itemsById={itemsById}
           showNames={showNames}
           armedChampionId={armedChampionId}
           selectedUnitId={selectedUnitId}
           onHexClick={handleHexClick}
           onDropChampion={handleDropChampion}
           onMoveUnit={handleMoveUnit}
+          onDropItem={handleDropItem}
         />
+
+        {selectedUnit && selectedChampion ? (
+          <ItemPanel
+            items={items}
+            itemsById={itemsById}
+            championName={selectedChampion.name}
+            equipped={selectedUnit.items}
+            onEquip={(itemId) => equipItem(selectedUnit.id, itemId)}
+            onRemove={(index) => removeUnitItem(selectedUnit.id, index)}
+          />
+        ) : (
+          <p className="rounded-lg border border-dashed border-border bg-card/40 px-3 py-4 text-center text-xs text-muted-foreground">
+            Selecione uma unidade no tabuleiro para equipar itens (até {MAX_ITEMS}).
+          </p>
+        )}
+
+        <SynergyPanel active={activeTraits} traitsById={traitsById} />
       </div>
 
-      <div className="w-full lg:w-80 lg:shrink-0">
+      <div className="flex w-full flex-col gap-4 lg:w-80 lg:shrink-0">
         {champions.length === 0 ? (
           <p className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
             Catálogo de campeões indisponível.
@@ -283,6 +481,15 @@ export function Builder({ champions }: { champions: BuilderChampion[] }) {
             onArm={armChampion}
           />
         )}
+
+        {augments.length > 0 ? (
+          <AugmentPicker
+            augments={augments}
+            augmentsById={augmentsById}
+            selected={selectedAugments}
+            onToggle={handleToggleAugment}
+          />
+        ) : null}
       </div>
     </div>
   );

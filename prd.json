@@ -1,7 +1,7 @@
 {
   "project": "MetaComps",
   "branchName": "ralph/tft-comps-tierlist",
-  "description": "Site de tier lists de composicoes de TFT (Next.js App Router + Tailwind + Prisma/Postgres). Tier list publica (SSG/ISR) com filtros e badges Novo/Atualizado, paginas de detalhe por comp (traits, carries, itens, board, augments, guia Quando jogar / Como jogar), um Builder de times compartilhado (publico, 'Abrir no Builder' e editor da comp no admin) e painel admin proprio para curadoria por patch. Identidade visual baseada no tftlab.com.br (tema dark slate + acento ciano).",
+  "description": "Site de tier lists de composicoes de TFT (Next.js App Router + Tailwind + Prisma/Postgres), concebido como uma EXTENSAO do site tftlab.com.br: adiciona as abas 'Builder' e 'Tier Lists' ao tftlab, mantendo o design e a identidade visual o mais proximo possivel do tftlab (tema dark slate + acento ciano, mesma tipografia e componentes de UI). Tier list publica (SSG/ISR) com filtros e badges Novo/Atualizado, paginas de detalhe por comp (traits, carries, itens, board, augments, guia Quando jogar / Como jogar), um Builder de times compartilhado (publico, 'Abrir no Builder' e editor da comp no admin) e painel admin proprio para curadoria por patch. Referencias de UX/design para o Builder: tftlab.com.br e https://tactics.tools/team-builder.",
   "userStories": [
     {
       "id": "US-001",
@@ -403,8 +403,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 26,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Builder stars + team value + live synergy panel. STARS: PlacedUnit gained a required `stars: number` (src/lib/builder.ts); placeChampion creates units at `stars:1`; new `setUnitStars(unitId, stars)` commits via the same snapshot-history stack so star edits are undo/redo-able. UI: when a unit is SELECTED a `role=group aria-label='Nível de estrela'` toolbar control appears with 1★/2★/3★ buttons (aria-pressed on the active level); each hex shows a `★`×stars overlay (amber, top-center) and the hex aria-label now reads e.g. 'Veigar, 3 estrelas — linha 1, coluna 1' (builder-board.tsx imports clampStars for display). Stars survive move/swap (spread `{...u}`) and removal of OTHER units. SYNERGY PANEL: new src/components/builder/synergy-panel.tsx (presentational) renders `computeSynergies` output — each active trait shows icon + name + '(nível {tier})' + `count`/`nextBreakpoint` (or máximo), tier-colored count badge (bronze/silver/gold/prismatic brand-gradient for tier≥4), empty state 'Posicione campeões para ativar sinergias.'. builder.tsx memoizes `activeTraits` from `units.map(u => ({championId, traits: championsById.get(id).traits.map(t=>t.id)}))` + `traitInfos` (key=trait id) so it recomputes on every place/move/remove; stars intentionally do NOT change synergy counts (unique-champion counting). TEAM VALUE: new pure `teamGoldValue(units, costOf)` in builder.ts = Σ cost×3^(stars-1) (TFT combine math: 2★=×3, 3★=×9); shown as 'Valor: ◆N' next to the existing 'N unidades' count. DATA: new `getBuilderTraits(set?)` in src/server/queries/catalog.ts → `BuilderTraitInfo[]` ({id,name,iconUrl,breakpoints:number[]}, Json coerced via toBreakpoints), keyed by the same trait id getBuilderChampions puts on champion traits; builder page now caches {champions,traits} under one `unstable_cache(['builder-catalog'],{tags:['catalog']})` and passes `traits` to <Builder>. TESTS: new src/lib/builder.test.ts (clampStars 1–3/round/NaN; teamGoldValue star-scaling + skip unknown cost) — 27/27 pass. Quality: rm -rf .next; typecheck exit 0; lint 'No ESLint warnings or errors'; 27/27 tests. Browser (Playwright, localhost:3001 — stale server holds :3000): page 'Static route'; placed Veigar(1)/Poppy(1)/Gnar(2) => '3 unidades, Valor: ◆4', synergy 'Meeple (nível 1) 3 / 5'; selected Veigar => star group shows (1★ pressed), set 3★ => 'Valor: ◆12' (9+1+2), hex label 'Veigar, 3 estrelas', overlay '★★★', synergy UNCHANGED (stars don't affect count); removed Gnar => '2 unidades, Valor: ◆10', Meeple<3 => '0 ativas' empty state, Veigar kept 3★; no h-scroll at 1280 (1280==1280) or 360 (360==360, star control + synergy panel + palette all stack); only console error is the expected favicon 404. US-028 (share code) must encode `stars` (already on PlacedUnit) alongside championId/row/col."
     },
     {
       "id": "US-027",
@@ -419,7 +419,7 @@
       ],
       "priority": 27,
       "passes": false,
-      "notes": ""
+      "notes": "Referencia de UX/design do builder: https://tactics.tools/team-builder (alem do tftlab.com.br). Manter layout e interacoes proximos dessas referencias e do design do tftlab, ja que o site e uma extensao do tftlab.com.br (abas Builder e Tier Lists)."
     },
     {
       "id": "US-028",
@@ -436,7 +436,7 @@
       ],
       "priority": 28,
       "passes": false,
-      "notes": ""
+      "notes": "Referencia de UX/design do builder: https://tactics.tools/team-builder (alem do tftlab.com.br). Manter layout e interacoes proximos dessas referencias e do design do tftlab, ja que o site e uma extensao do tftlab.com.br (abas Builder e Tier Lists)."
     },
     {
       "id": "US-029",
@@ -450,7 +450,7 @@
       ],
       "priority": 29,
       "passes": false,
-      "notes": ""
+      "notes": "Referencia de UX/design do builder: https://tactics.tools/team-builder (alem do tftlab.com.br). Manter layout e interacoes proximos dessas referencias e do design do tftlab, ja que o site e uma extensao do tftlab.com.br (abas Builder e Tier Lists)."
     },
     {
       "id": "US-030",
@@ -574,7 +574,7 @@
       ],
       "priority": 37,
       "passes": false,
-      "notes": ""
+      "notes": "Referencia de UX/design do builder: https://tactics.tools/team-builder (alem do tftlab.com.br). Manter layout e interacoes proximos dessas referencias e do design do tftlab, ja que o site e uma extensao do tftlab.com.br (abas Builder e Tier Lists)."
     },
     {
       "id": "US-038",
