@@ -1,31 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Tier } from "@prisma/client";
 
+import { BUILDER_HEX_CLIP } from "@/lib/builder";
+import { TIER_META } from "@/lib/tiers";
 import type { CompCard as CompCardData } from "@/server/queries/tierlist";
 import { getCompBadges } from "@/server/services/badges";
 
 /**
- * CompCard (US-015, revised).
+ * CompCard (US-015, revised) — tftacademy-aligned hexagon.
  *
- * In the tier list a comp is shown ONLY as a champion icon — the "cover"
- * champion chosen when writing the guide (falls back to the comp's first carry).
- * No name or synergies are rendered on the card; the comp name is still exposed
- * via `aria-label`/`title` for accessibility. The whole tile links to
- * `/comps/[slug]` and carries the tier-colored left border plus the
- * Novo/Atualizado badges from the badges service.
- *
- * Tier border classes are written out in full (never interpolated) so
- * Tailwind's content scanner keeps `border-l-tier-*` in the build.
+ * In the tier list a comp is shown ONLY as a hexagon of its "cover" champion
+ * (chosen when writing the guide; falls back to the first carry), with a
+ * tier-colored rim (same pointy-top hex as the builder/guide board, for a
+ * consistent look). No name/synergies are drawn; the name stays in
+ * `aria-label`/`title`. The tile links to `/comps/[slug]` and overlays the
+ * Novo/Atualizado badge.
  */
-const TIER_BORDER: Record<Tier, string> = {
-  S: "border-l-tier-s",
-  A: "border-l-tier-a",
-  B: "border-l-tier-b",
-  C: "border-l-tier-c",
-  X: "border-l-tier-x",
-};
-
 interface CompCardProps {
   comp: CompCardData;
   /** Current patch id from SiteConfig, for the Novo/Atualizado badges. */
@@ -36,43 +26,46 @@ export function CompCard({ comp, currentPatchId }: CompCardProps) {
   const { isNew, isUpdated } = getCompBadges(comp, currentPatchId);
   // Cover champion chosen for the guide; fall back to the comp's first carry.
   const champion = comp.coverChampion ?? comp.units[0]?.champion ?? null;
+  const rim = TIER_META[comp.tier].chipClass;
 
   return (
     <Link
       href={`/comps/${comp.slug}`}
       aria-label={`Ver comp ${comp.name}`}
       title={comp.name}
-      className={`group relative block shrink-0 overflow-hidden rounded-lg border border-l-4 border-border bg-muted/40 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${TIER_BORDER[comp.tier]}`}
+      className="group relative block shrink-0 rounded-md transition-transform hover:z-10 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <span className="relative block h-20 w-20 sm:h-24 sm:w-24">
-        {champion ? (
-          <Image
-            src={champion.iconUrl}
-            alt={comp.name}
-            fill
-            sizes="96px"
-            className="object-cover"
-          />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center text-2xl text-muted-foreground">
-            ?
-          </span>
-        )}
+      <span className="relative block h-[4.5rem] w-[4.5rem] sm:h-[5rem] sm:w-[5rem]">
+        {/* Tier-colored rim */}
+        <span
+          className={`absolute inset-0 ${rim}`}
+          style={{ clipPath: BUILDER_HEX_CLIP }}
+        />
+        {/* Inner well + cover image */}
+        <span
+          className="absolute inset-[6%] overflow-hidden bg-[#0a1322]"
+          style={{ clipPath: BUILDER_HEX_CLIP }}
+        >
+          {champion ? (
+            <Image
+              src={champion.iconUrl}
+              alt={comp.name}
+              fill
+              sizes="80px"
+              className="object-cover"
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-2xl text-muted-foreground">
+              ?
+            </span>
+          )}
+        </span>
       </span>
 
       {(isNew || isUpdated) && (
-        <div className="pointer-events-none absolute left-0 top-0 flex flex-col items-start gap-0.5 p-1">
-          {isNew && (
-            <span className="rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-primary-foreground">
-              Novo
-            </span>
-          )}
-          {isUpdated && (
-            <span className="rounded bg-secondary px-1 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-secondary-foreground">
-              Atu
-            </span>
-          )}
-        </div>
+        <span className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/3 rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-primary-foreground">
+          {isNew ? "Novo" : "Atu"}
+        </span>
       )}
     </Link>
   );
