@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   getAdminCompAugments,
+  getAdminCompBadge,
   getAdminCompById,
   getAdminCompCarries,
   getAdminCompPriority,
@@ -17,6 +18,7 @@ import { CompForm } from "@/components/admin/comp-form";
 import { CompStatusControls } from "@/components/admin/comp-status-controls";
 import { CompCarriesForm } from "@/components/admin/comp-carries-form";
 import { CompAugmentsForm } from "@/components/admin/comp-augments-form";
+import { CompBadgeForm } from "@/components/admin/comp-badge-form";
 import { CompPriorityForm } from "@/components/admin/comp-priority-form";
 
 export const metadata: Metadata = {
@@ -42,11 +44,12 @@ export default async function EditCompPage({
 
   if (!comp) notFound();
 
-  const [carries, augmentIds, priority, champions, items, augments] =
+  const [carries, augmentIds, priority, badge, champions, items, augments] =
     await Promise.all([
       getAdminCompCarries(comp.id),
       getAdminCompAugments(comp.id),
       getAdminCompPriority(comp.id),
+      getAdminCompBadge(comp.id),
       getBuilderChampions(comp.set),
       getBuilderItems(comp.set),
       getBuilderAugments(comp.set),
@@ -105,6 +108,13 @@ export default async function EditCompPage({
       />
 
       <CompForm patches={patches} comp={comp} champions={championOptions} />
+
+      <CompBadgeForm
+        compId={comp.id}
+        augments={augmentOptions}
+        items={itemOptions}
+        initial={badge}
+      />
 
       <CompCarriesForm
         compId={comp.id}

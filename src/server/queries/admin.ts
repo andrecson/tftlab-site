@@ -295,6 +295,20 @@ export async function getAdminCompAugments(compId: string): Promise<string[]> {
   return augments.map((a) => a.augmentId);
 }
 
+/** Load a comp's chosen tier-list badge item/augment ids for the badge form. */
+export async function getAdminCompBadge(
+  compId: string,
+): Promise<{ itemId: string | null; augmentId: string | null }> {
+  const comp = await db.comp.findUnique({
+    where: { id: compId },
+    select: { badgeItemId: true, badgeAugmentId: true },
+  });
+  return {
+    itemId: comp?.badgeItemId ?? null,
+    augmentId: comp?.badgeAugmentId ?? null,
+  };
+}
+
 
 /**
  * The general item priority + augment-category priority a curator edits in

@@ -27,6 +27,8 @@ export function CompCard({ comp, currentPatchId }: CompCardProps) {
   // Cover champion chosen for the guide; fall back to the comp's first carry.
   const champion = comp.coverChampion ?? comp.units[0]?.champion ?? null;
   const rim = TIER_META[comp.tier].chipClass;
+  // Optional item/augment icon badge (independent of tier/flags), when set.
+  const badge = comp.badgeAugment ?? comp.badgeItem ?? null;
 
   return (
     <Link
@@ -61,6 +63,22 @@ export function CompCard({ comp, currentPatchId }: CompCardProps) {
           )}
         </span>
       </span>
+
+      {/* Optional badge — a chosen item/augment icon (any comp, any tier). */}
+      {badge ? (
+        <span
+          className="pointer-events-none absolute -bottom-1 -right-1 z-10 block h-[42%] w-[42%] overflow-hidden rounded-full bg-[#0a1322] ring-2 ring-background"
+          title={badge.name}
+        >
+          <Image
+            src={badge.iconUrl}
+            alt=""
+            fill
+            sizes="36px"
+            className="object-cover"
+          />
+        </span>
+      ) : null}
 
       {/* "Novo" — a crafted cyan pill with a soft brand glow (impeccable pass);
           the "Atualizado" badge was removed from the tier list. */}

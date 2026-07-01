@@ -55,7 +55,7 @@ model Item {
   compUnitItems  CompUnitItem[]
   itemPriorities CompItemPriority[]
   carryItems     CompCarryItem[]
-  situationalFor Comp[]             @relation("CompSituationalItem")
+  badgeForComps  Comp[]             @relation("CompBadgeItem")
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
@@ -87,7 +87,7 @@ model Augment {
   set          String
   tier         String?
   compAugments CompAugment[]
-  situationalFor Comp[]      @relation("CompSituationalAugment")
+  badgeForComps Comp[]        @relation("CompBadgeAugment")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -195,12 +195,13 @@ model Comp {
   units             CompUnit[]
   coverChampionId   String?
   coverChampion     Champion?          @relation("CompCover", fields: [coverChampionId], references: [id])
-  // Situational comps show a chosen item OR augment icon as their tier-list
-  // badge (at most one is set).
-  situationalItemId    String?
-  situationalItem      Item?           @relation("CompSituationalItem", fields: [situationalItemId], references: [id])
-  situationalAugmentId String?
-  situationalAugment   Augment?        @relation("CompSituationalAugment", fields: [situationalAugmentId], references: [id])
+  // Optional item OR augment icon shown as the comp's tier-list badge (at most
+  // one is set) — independent of tier or any flag. Columns keep their original
+  // names via @map, so no DB migration is needed.
+  badgeItemId    String?   @map("situationalItemId")
+  badgeItem      Item?     @relation("CompBadgeItem", fields: [badgeItemId], references: [id])
+  badgeAugmentId String?   @map("situationalAugmentId")
+  badgeAugment   Augment?  @relation("CompBadgeAugment", fields: [badgeAugmentId], references: [id])
   itemPriority      CompItemPriority[]
   augments          CompAugment[]
   carries           CompCarry[]
