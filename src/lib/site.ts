@@ -12,6 +12,13 @@ export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://tftlab.com.br"
 ).replace(/\/+$/, "");
 
+/**
+ * When `NEXT_PUBLIC_NOINDEX=true`, the deploy asks crawlers not to index it
+ * (robots.txt disallows everything + a `noindex` meta on every page). Used for
+ * the hidden/test deploy so it never competes with the live site on search.
+ */
+export const NOINDEX = process.env.NEXT_PUBLIC_NOINDEX === "true";
+
 /** Product name, used in titles and Open Graph `site_name`. */
 export const SITE_NAME = "TFTLab";
 

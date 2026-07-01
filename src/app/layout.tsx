@@ -4,6 +4,7 @@ import "./globals.css";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { ErrorMonitor } from "@/components/error-monitor";
 import {
+  NOINDEX,
   SITE_DESCRIPTION,
   SITE_LOCALE,
   SITE_NAME,
@@ -37,6 +38,9 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
+  // Hidden/test deploy (NEXT_PUBLIC_NOINDEX=true): emit a `noindex` meta on every
+  // page so the test never gets indexed alongside the live tftlab.com.br.
+  robots: NOINDEX ? { index: false, follow: false } : undefined,
   openGraph: {
     type: "website",
     siteName: SITE_NAME,

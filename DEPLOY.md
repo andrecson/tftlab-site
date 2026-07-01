@@ -1,6 +1,12 @@
-# Deploy do TFTLab — Vercel + Neon + domínio Hostinger
+# Deploy do TFTLab — Vercel + Neon (deploy de TESTE, escondido)
 
-Guia de publicação do site em produção.
+Guia de publicação do app.
+
+> ⚠️ **tftlab.com.br já está no ar.** Este guia sobe o app **só para teste**, num
+> endereço **escondido** (a URL `*.vercel.app` ou um subdomínio como
+> `teste.tftlab.com.br`), com **indexação bloqueada** — **sem tocar no site
+> atual**. O apex `tftlab.com.br` **não** é alterado em nenhum passo aqui. A parte
+> "ir ao ar de verdade" fica separada no fim (passo 8), pra quando você validar.
 
 O TFTLab é um app **Next.js full-stack** (server actions, autenticação, ISR) com
 banco **Postgres** — ele **não é** um site estático e **não roda** em hospedagem
@@ -81,7 +87,8 @@ git push -u origin main
    | `DIRECT_URL` | string **direct** da Neon |
    | `AUTH_SECRET` | gere com `openssl rand -base64 33` |
    | `AUTH_TRUST_HOST` | `true` |
-   | `NEXT_PUBLIC_SITE_URL` | `https://tftlab.com.br` |
+   | `NEXT_PUBLIC_SITE_URL` | a URL de **teste** (a `*.vercel.app`, ou `https://teste.tftlab.com.br`) |
+   | `NEXT_PUBLIC_NOINDEX` | `true` (bloqueia indexação enquanto é teste) |
    | `ADMIN_EMAIL` | e-mail do admin (ex.: `bruno.benedetti@hotmail.com`) |
    | `ADMIN_PASSWORD` | uma senha **forte** |
    | `CURATOR_EMAIL` | login do curador (ex.: `tftlab`) |
@@ -115,7 +122,7 @@ npm run db:seed
 npm run catalog:import
 ```
 
-Depois é só logar em `https://tftlab.com.br/admin/login` com o
+Depois é só logar em `<URL-de-teste>/admin/login` com o
 `CURATOR_EMAIL`/`CURATOR_PASSWORD` e criar/publicar as comps.
 
 ### (Opcional) Levar as comps que você já criou local → produção
@@ -135,31 +142,37 @@ psql "postgresql://...neon.tech/neondb?sslmode=require" < tftlab-data.sql
 
 ---
 
-## 5. Ligar o domínio tftlab.com.br
+## 5. Acessar o site de teste (escondido, sem tocar no site atual)
 
-1. **Na Vercel**: Project → **Settings → Domains** → adicione `tftlab.com.br` e
-   `www.tftlab.com.br`. A Vercel mostra os registros DNS a usar.
-2. **Na Hostinger** (hPanel → **Domínios → tftlab.com.br → Zona DNS / DNS Zone**):
-   - Registro **A**: host `@` → valor `76.76.21.21` (IP que a Vercel indicar)
-   - Registro **CNAME**: host `www` → valor `cname.vercel-dns.com`
-   - **Remova** registros A antigos do `@` (ex.: apontando pro parking da Hostinger)
-     que conflitem.
-3. Aguarde a propagação (minutos a algumas horas). A Vercel emite o **SSL
-   (HTTPS)** automaticamente quando o DNS resolve.
+Escolha **uma** das opções. Nas duas, o apex `tftlab.com.br` **continua intacto**.
 
-> Use **sempre** os valores exatos que a tela de Domains da Vercel mostrar — se
-> ela pedir para trocar os nameservers em vez de registros A/CNAME, siga o que
-> ela indicar. O importante é que só o DNS mude na Hostinger; o domínio continua
-> sendo seu, comprado lá.
+**Opção A — URL da Vercel (mais simples, nada de DNS):**
+Use a URL que a Vercel já dá, tipo `https://tftlab-xxxx.vercel.app`. É privada o
+suficiente pra teste e não mexe em nada no domínio.
+
+**Opção B — subdomínio `teste.tftlab.com.br` (URL mais amigável):**
+1. **Na Vercel**: Project → **Settings → Domains** → adicione **apenas**
+   `teste.tftlab.com.br` (NÃO adicione `tftlab.com.br` nem `www`).
+2. **Na Hostinger** (hPanel → **Domínios → tftlab.com.br → Zona DNS**):
+   - Adicione **um** registro **CNAME**: host `teste` → valor `cname.vercel-dns.com`
+   - **Não** mexa nos registros `@` e `www` (são o site que está no ar).
+3. A Vercel emite o **SSL** desse subdomínio automaticamente quando o DNS resolve.
+
+> Com `NEXT_PUBLIC_NOINDEX=true` (passo 3), o Google não indexa esse teste, então
+> ele não concorre com o `tftlab.com.br` real. **Não** remova/edite os registros
+> `@`/`www` na Hostinger — é isso que preserva o site atual.
 
 ---
 
 ## 6. Conferir
 
-- `https://tftlab.com.br` abre a tier list (HTTPS, cadeado válido)
-- `https://tftlab.com.br/admin/login` → login do curador funciona
+Na **URL de teste** (a `*.vercel.app` ou `teste.tftlab.com.br`):
+
+- abre a tier list (HTTPS, cadeado válido)
+- `…/admin/login` → login do curador funciona
 - Builder, guias e edição de comps funcionam
-- `https://tftlab.com.br/sitemap.xml` e `/robots.txt` respondem
+- `…/robots.txt` mostra `Disallow: /` (confirma que está bloqueado pra busca)
+- o `tftlab.com.br` **atual continua no ar, inalterado**
 
 ---
 
@@ -181,6 +194,28 @@ git add -A && git commit -m "..." && git push
 
 ---
 
+## 8. (Depois) Ir ao ar no tftlab.com.br de verdade
+
+**Só faça isto quando decidir substituir o site atual pelo novo.** Este passo
+**troca** o que responde no `tftlab.com.br` — confirme antes.
+
+1. Garanta que o app de teste está redondo.
+2. Na Vercel, troque as env vars de produção: `NEXT_PUBLIC_SITE_URL` →
+   `https://tftlab.com.br` e **remova** `NEXT_PUBLIC_NOINDEX` (ou deixe vazio),
+   depois redeploy (pra liberar a indexação e as URLs canônicas corretas).
+3. Na Vercel: **Settings → Domains** → adicione `tftlab.com.br` e `www.tftlab.com.br`.
+4. Na Hostinger (Zona DNS), aí sim aponte o apex pra Vercel:
+   - **A** `@` → o IP que a Vercel indicar (normalmente `76.76.21.21`)
+   - **CNAME** `www` → `cname.vercel-dns.com`
+   - remova os registros antigos do `@`/`www` que apontavam pro site anterior.
+5. Aguarde a propagação; a Vercel emite o SSL do apex. O `teste.` pode ser
+   removido depois.
+
+> Faça backup/anote a config atual do site antigo antes de trocar o DNS, caso
+> precise voltar.
+
+---
+
 ## Referência rápida — variáveis de ambiente
 
 | Variável | Obrigatória | Onde |
@@ -189,7 +224,8 @@ git add -A && git commit -m "..." && git push
 | `DIRECT_URL` | ✅ | Neon (direct) |
 | `AUTH_SECRET` | ✅ | gerar (`openssl rand -base64 33`) |
 | `AUTH_TRUST_HOST` | ✅ | `true` |
-| `NEXT_PUBLIC_SITE_URL` | ✅ | `https://tftlab.com.br` |
+| `NEXT_PUBLIC_SITE_URL` | ✅ | URL de teste agora; `https://tftlab.com.br` ao ir ao ar |
+| `NEXT_PUBLIC_NOINDEX` | teste | `true` no teste; vazio em produção |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | ✅ | você define |
 | `CURATOR_EMAIL` / `CURATOR_PASSWORD` | ✅ | você define |
 | `NEXT_PUBLIC_ANALYTICS_DOMAIN` | ⬜ | Plausible (opcional) |
