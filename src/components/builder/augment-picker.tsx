@@ -32,6 +32,8 @@ export function AugmentPicker({
   onToggle,
 }: AugmentPickerProps) {
   const [query, setQuery] = useState("");
+  // A busca + grid de augments so aparecem quando o usuario clica num slot "+".
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const selectedIds = useMemo(() => new Set(selected), [selected]);
   const full = selected.length >= MAX_AUGMENTS;
@@ -80,69 +82,92 @@ export function AugmentPicker({
                   </button>
                 </span>
               ) : (
-                <span
-                  aria-hidden="true"
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground/50"
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen((open) => !open)}
+                  aria-label="Adicionar augment"
+                  aria-expanded={pickerOpen}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-dashed border-border text-lg leading-none text-muted-foreground/70 transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   +
-                </span>
+                </button>
               )}
             </li>
           );
         })}
       </ul>
 
-      <label className="block">
-        <span className="sr-only">Buscar augment</span>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar augment…"
-          aria-label="Buscar augment"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        />
-      </label>
+      {pickerOpen ? (
+        <div className="flex flex-col gap-2 border-t border-border pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">
+              Escolha um augment
+            </span>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              className="text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:underline focus-visible:outline-none"
+            >
+              Fechar
+            </button>
+          </div>
 
-      {visible.length === 0 ? (
-        <p className="px-1 py-6 text-center text-sm text-muted-foreground">
-          Nenhum augment encontrado.
-        </p>
-      ) : (
-        <ul className="grid max-h-64 grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-5">
-          {visible.map((augment) => {
-            const isSelected = selectedIds.has(augment.id);
-            const disabled = full && !isSelected;
-            return (
-              <li key={augment.id}>
-                <button
-                  type="button"
-                  onClick={() => onToggle(augment.id)}
-                  disabled={disabled}
-                  aria-pressed={isSelected}
-                  title={augment.name}
-                  aria-label={`${isSelected ? "Remover" : "Selecionar"} ${augment.name}`}
-                  className={`flex w-full items-center justify-center rounded-md border p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 ${
-                    isSelected
-                      ? "border-primary bg-primary/10"
-                      : "border-transparent bg-muted/40 hover:border-border hover:bg-muted"
-                  }`}
-                >
-                  <span className="relative block aspect-square w-full overflow-hidden rounded">
-                    <Image
-                      src={augment.iconUrl}
-                      alt=""
-                      fill
-                      sizes="56px"
-                      className="object-contain"
-                    />
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+          <label className="block">
+            <span className="sr-only">Buscar augment</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar augment…"
+              aria-label="Buscar augment"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </label>
+
+          {visible.length === 0 ? (
+            <p className="px-1 py-6 text-center text-sm text-muted-foreground">
+              Nenhum augment encontrado.
+            </p>
+          ) : (
+            <ul className="grid max-h-64 grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-5">
+              {visible.map((augment) => {
+                const isSelected = selectedIds.has(augment.id);
+                const disabled = full && !isSelected;
+                return (
+                  <li key={augment.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onToggle(augment.id);
+                        setPickerOpen(false);
+                      }}
+                      disabled={disabled}
+                      aria-pressed={isSelected}
+                      title={augment.name}
+                      aria-label={`${isSelected ? "Remover" : "Selecionar"} ${augment.name}`}
+                      className={`flex w-full items-center justify-center rounded-md border p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 ${
+                        isSelected
+                          ? "border-primary bg-primary/10"
+                          : "border-transparent bg-muted/40 hover:border-border hover:bg-muted"
+                      }`}
+                    >
+                      <span className="relative block aspect-square w-full overflow-hidden rounded">
+                        <Image
+                          src={augment.iconUrl}
+                          alt=""
+                          fill
+                          sizes="56px"
+                          className="object-contain"
+                        />
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }
