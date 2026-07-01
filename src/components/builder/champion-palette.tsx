@@ -134,7 +134,7 @@ export function ChampionPalette({
           Nenhum campeão encontrado.
         </p>
       ) : (
-        <ul className="grid max-h-[28rem] grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-6 xl:grid-cols-7">
+        <ul className="grid max-h-[28rem] grid-cols-5 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-9">
           {visible.map((champion) => {
             const armed = champion.id === armedChampionId;
             return (
