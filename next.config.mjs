@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Don't advertise the framework in response headers.
+  poweredByHeader: false,
   images: {
     // Champion/trait/item/augment icons are served from Community Dragon
     // (see src/server/ddragon.ts). Whitelisting the host lets next/image render
