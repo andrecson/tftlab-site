@@ -87,7 +87,7 @@ function Hex({
         : "bg-gradient-to-b from-slate-400/85 to-slate-600/75"
       : armed
         ? "bg-gradient-to-b from-primary/70 to-primary/30"
-        : "bg-gradient-to-b from-slate-600/70 to-slate-800/60";
+        : "bg-gradient-to-b from-[#3a4f6b] to-[#1c2c44]";
 
   // A soft glow that hugs the hex silhouette (drop-shadow respects clip-path)
   // to make the selected/carry states pop without a clipped-away ring.
@@ -139,16 +139,16 @@ function Hex({
         {/* Inner well — the dark seat that frames the champion, or the empty
             hex. Brightens on hover for empty, non-armed hexes as a drop hint. */}
         <span
-          className={`absolute inset-[7.5%] bg-[#0a0e18] ${
+          className={`absolute inset-[6%] bg-[#0a1322] ${
             unit || armed
               ? ""
-              : "transition-colors group-hover/hex:bg-[#141c2b]"
+              : "transition-colors group-hover/hex:bg-[#182842]"
           }`}
           style={{ clipPath: BUILDER_HEX_CLIP }}
         />
         {champion ? (
           <span
-            className="absolute inset-[7.5%] overflow-hidden"
+            className="absolute inset-[6%] overflow-hidden"
             style={{ clipPath: BUILDER_HEX_CLIP }}
           >
             <Image
@@ -220,7 +220,7 @@ export function BuilderBoard({
   const byHex = unitsByHex(units);
 
   return (
-    <div className="mx-auto w-full max-w-xl rounded-xl border border-border/70 bg-gradient-to-b from-[#0c1220] to-[#070b14] p-3 shadow-inner sm:p-4">
+    <div className="mx-auto w-full max-w-xl rounded-xl border border-[#20344f] bg-gradient-to-b from-[#152740] to-[#0c1a2c] p-3 shadow-inner sm:p-4">
       <div className="flex flex-col">
         {Array.from({ length: BOARD_ROWS }, (_, row) => (
           <div

@@ -481,8 +481,7 @@ export function Builder({
   }
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
+    <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -615,18 +614,25 @@ export function Builder({
           </p>
         ) : null}
 
-        <BuilderBoard
-          units={units}
-          championsById={championsById}
-          itemsById={itemsById}
-          showNames={showNames}
-          armedChampionId={armedChampionId}
-          selectedUnitId={selectedUnitId}
-          onHexClick={handleHexClick}
-          onDropChampion={handleDropChampion}
-          onMoveUnit={handleMoveUnit}
-          onDropItem={handleDropItem}
-        />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="w-full lg:w-72 lg:shrink-0">
+            <SynergyPanel active={activeTraits} traitsById={traitsById} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <BuilderBoard
+              units={units}
+              championsById={championsById}
+              itemsById={itemsById}
+              showNames={showNames}
+              armedChampionId={armedChampionId}
+              selectedUnitId={selectedUnitId}
+              onHexClick={handleHexClick}
+              onDropChampion={handleDropChampion}
+              onMoveUnit={handleMoveUnit}
+              onDropItem={handleDropItem}
+            />
+          </div>
+        </div>
 
         {selectedUnit && selectedChampion ? (
           <ItemPanel
@@ -643,31 +649,32 @@ export function Builder({
           </p>
         )}
 
-        <SynergyPanel active={activeTraits} traitsById={traitsById} />
-      </div>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="min-w-0 flex-1">
+            {champions.length === 0 ? (
+              <p className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+                Catálogo de campeões indisponível.
+              </p>
+            ) : (
+              <ChampionPalette
+                champions={champions}
+                armedChampionId={armedChampionId}
+                onArm={armChampion}
+              />
+            )}
+          </div>
 
-      <div className="flex w-full flex-col gap-4 lg:w-80 lg:shrink-0">
-        {champions.length === 0 ? (
-          <p className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            Catálogo de campeões indisponível.
-          </p>
-        ) : (
-          <ChampionPalette
-            champions={champions}
-            armedChampionId={armedChampionId}
-            onArm={armChampion}
-          />
-        )}
-
-        {augments.length > 0 ? (
-          <AugmentPicker
-            augments={augments}
-            augmentsById={augmentsById}
-            selected={selectedAugments}
-            onToggle={handleToggleAugment}
-          />
-        ) : null}
-      </div>
+          {augments.length > 0 ? (
+            <div className="w-full lg:w-80 lg:shrink-0">
+              <AugmentPicker
+                augments={augments}
+                augmentsById={augmentsById}
+                selected={selectedAugments}
+                onToggle={handleToggleAugment}
+              />
+            </div>
+          ) : null}
+        </div>
     </div>
   );
 }
