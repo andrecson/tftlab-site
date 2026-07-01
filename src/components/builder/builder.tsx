@@ -250,6 +250,8 @@ export function Builder({
         isCarry: false,
       });
       commit(next);
+      // Adicionar um campeao des-seleciona a paleta (nao fica "grudado").
+      setArmedChampionId(null);
     },
     [commit, units],
   );

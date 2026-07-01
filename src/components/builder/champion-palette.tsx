@@ -147,7 +147,7 @@ export function ChampionPalette({
                       "text/plain",
                       `${CHAMPION_DND_PREFIX}${champion.id}`,
                     );
-                    event.dataTransfer.effectAllowed = "copy";
+                    event.dataTransfer.effectAllowed = "copyMove";
                   }}
                   onClick={() => onArm(champion.id)}
                   aria-pressed={armed}

@@ -220,7 +220,7 @@ export function BuilderBoard({
   const byHex = unitsByHex(units);
 
   return (
-    <div className="mx-auto w-full max-w-xl rounded-xl border border-[#20344f] bg-gradient-to-b from-[#152740] to-[#0c1a2c] p-3 shadow-inner sm:p-4">
+    <div className="w-full max-w-2xl rounded-xl border border-[#20344f] bg-gradient-to-b from-[#152740] to-[#0c1a2c] p-3 shadow-inner sm:p-4">
       <div className="flex flex-col">
         {Array.from({ length: BOARD_ROWS }, (_, row) => (
           <div
