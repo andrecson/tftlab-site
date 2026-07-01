@@ -50,17 +50,5 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
-    line-height: 1.5;
-  }
-  /* Display type (Overpass) for headings — tftacademy-aligned hierarchy. */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-overpass), ui-sans-serif, system-ui, sans-serif;
-    line-height: 1.2;
   }
 }

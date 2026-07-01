@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Overpass, Roboto } from "next/font/google";
 import "./globals.css";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { ErrorMonitor } from "@/components/error-monitor";
@@ -11,28 +10,10 @@ import {
 } from "@/lib/site";
 
 /**
- * Type pairing aligned to the tftacademy builder reference (skillui-extracted):
- * Overpass for display/headings/UI, Roboto for body. Exposed as CSS variables so
- * Tailwind's `font-display`/`font-sans` and the base heading rule can use them.
- */
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-roboto",
-  display: "swap",
-});
-const overpass = Overpass({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-overpass",
-  display: "swap",
-});
-
-/**
  * Root metadata (US-023). `metadataBase` makes every relative canonical/OG URL
  * (set here and per-page via `generateMetadata`) resolve to an absolute URL. The
  * title `template` appends the brand to page titles (e.g. "N.O.V.A. Blitzcrank —
- * S Tier · MetaComps"); pages that don't set their own metadata inherit these
+ * S Tier · TFTLab"); pages that don't set their own metadata inherit these
  * defaults and the site-wide Open Graph / Twitter cards.
  */
 export const metadata: Metadata = {
@@ -64,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${roboto.variable} ${overpass.variable}`}>
+    <html lang="pt-BR">
       <body>
         {children}
         <AnalyticsProvider />

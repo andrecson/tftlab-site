@@ -1,12 +1,11 @@
 import Link from "next/link";
 
 /**
- * Public site header (US-013).
- *
- * Presentational server component: the brand wordmark (brand-gradient), primary
- * navigation (Tierlist / Builder) and the current patch + "última atualização"
- * metadata. Data is passed in by the (public) layout so this stays a pure,
- * cache-friendly component.
+ * Public site header (US-013) — styled to match tftlab.com.br: the "TFTLab.br"
+ * cyan wordmark, uppercase letter-spaced navigation and the current patch /
+ * "última atualização" metadata. Presentational server component; data is passed
+ * in by the (public) layout so this stays pure and cache-friendly. The Tier List
+ * and Builder are the two public tabs.
  */
 interface SiteHeaderProps {
   /** Current patch version (e.g. "17.2"); null before a patch is configured. */
@@ -16,7 +15,7 @@ interface SiteHeaderProps {
 }
 
 const NAV_LINKS = [
-  { href: "/", label: "Tierlist" },
+  { href: "/", label: "Tier List" },
   { href: "/builder", label: "Builder" },
 ] as const;
 
@@ -31,23 +30,26 @@ function formatDate(date: Date): string {
 export function SiteHeader({ patchVersion, updatedAt }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
-        <div className="flex items-center gap-4 sm:gap-6">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3">
+        <div className="flex items-center gap-5 sm:gap-8">
+          {/* Wordmark — tftlab.com.br style: cyan bold italic + muted ".br". */}
           <Link
             href="/"
-            className="bg-brand-gradient bg-clip-text text-xl font-bold tracking-tight text-transparent"
+            aria-label="TFTLab.br"
+            className="text-xl font-bold italic tracking-tight"
           >
-            MetaComps
+            <span className="text-primary">TFTLab</span>
+            <span className="text-primary/50">.br</span>
           </Link>
           <nav
             aria-label="Navegação principal"
-            className="flex items-center gap-3 text-sm font-medium sm:gap-5"
+            className="flex items-center gap-4 sm:gap-6"
           >
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary sm:text-sm"
               >
                 {link.label}
               </Link>
@@ -57,7 +59,7 @@ export function SiteHeader({ patchVersion, updatedAt }: SiteHeaderProps) {
 
         <div className="flex items-center gap-4">
           {(patchVersion || updatedAt) && (
-            <div className="text-right text-xs leading-tight text-muted-foreground">
+            <div className="hidden text-right text-xs leading-tight text-muted-foreground sm:block">
               {patchVersion && (
                 <p>
                   Patch{" "}
@@ -71,7 +73,7 @@ export function SiteHeader({ patchVersion, updatedAt }: SiteHeaderProps) {
           )}
           <Link
             href="/admin/login"
-            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground sm:text-sm"
           >
             Entrar
           </Link>

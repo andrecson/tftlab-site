@@ -27,7 +27,7 @@ export function TierBands({ groups, currentPatchId }: TierBandsProps) {
             className="flex items-stretch gap-3"
           >
             {/* Tier badge — big colored square with the letter + corner brackets
-                (tftacademy-style), in the MetaComps tier colors. */}
+                (tftacademy-style), in the TFTLab tier colors. */}
             <div
               className={`relative flex w-16 min-h-[4rem] shrink-0 flex-col items-center justify-center rounded-lg text-background ${meta.chipClass} sm:w-[4.75rem]`}
             >
@@ -36,7 +36,7 @@ export function TierBands({ groups, currentPatchId }: TierBandsProps) {
               <span className="pointer-events-none absolute bottom-1.5 left-1.5 h-2.5 w-2.5 border-b-2 border-l-2 border-background/50" />
               <span className="pointer-events-none absolute bottom-1.5 right-1.5 h-2.5 w-2.5 border-b-2 border-r-2 border-background/50" />
               <span
-                className="font-display text-3xl font-extrabold leading-none sm:text-4xl"
+                className="text-3xl font-extrabold leading-none sm:text-4xl"
                 aria-hidden="true"
               >
                 {tier}

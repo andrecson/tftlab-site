@@ -9,11 +9,11 @@
  * both server and `"use client"` code may import these constants.
  */
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://metacomps.gg"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://tftlab.com.br"
 ).replace(/\/+$/, "");
 
 /** Product name, used in titles and Open Graph `site_name`. */
-export const SITE_NAME = "MetaComps";
+export const SITE_NAME = "TFTLab";
 
 /** Default site description (homepage + Open Graph fallback). */
 export const SITE_DESCRIPTION =

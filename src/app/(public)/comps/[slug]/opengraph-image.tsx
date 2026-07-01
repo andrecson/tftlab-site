@@ -13,7 +13,7 @@ import { getSiteConfig } from "@/server/queries/config";
  *
  * Runs in the default Node.js runtime (Prisma v6 needs it), so the DB read works.
  */
-export const alt = "Composição de TFT no MetaComps";
+export const alt = "Composição de TFT no TFTLab";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -45,7 +45,7 @@ export default async function Image({
     getSiteConfig(),
   ]);
 
-  const name = comp?.name ?? "MetaComps";
+  const name = comp?.name ?? "TFTLab";
   const tier: Tier = comp?.tier ?? "S";
   const tierColor = TIER_COLOR[tier];
   const patch =
@@ -90,7 +90,7 @@ export default async function Image({
           }}
         >
           <div style={{ display: "flex", fontSize: 40, fontWeight: 800, color: "#5EEAD4" }}>
-            MetaComps
+            TFTLab
           </div>
           {patch ? (
             <div style={{ display: "flex", fontSize: 28, color: "#94A3B8" }}>

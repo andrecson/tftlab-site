@@ -33,9 +33,11 @@ export default async function AdminLoginPage({
       <div className="rounded-xl border border-border bg-card p-6 shadow-lg">
         <Link
           href="/"
-          className="bg-brand-gradient bg-clip-text text-xl font-bold text-transparent"
+          aria-label="TFTLab.br"
+          className="text-xl font-bold italic tracking-tight"
         >
-          MetaComps
+          <span className="text-primary">TFTLab</span>
+          <span className="text-primary/50">.br</span>
         </Link>
         <h1 className="mt-6 text-2xl font-semibold text-foreground">
           Painel administrativo
