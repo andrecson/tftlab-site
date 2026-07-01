@@ -8,7 +8,7 @@ import {
   type CatalogOption,
 } from "@/components/admin/catalog-picker";
 import { updateCompCarries, type CompCarryInput } from "@/actions/comps";
-import { MAX_ITEMS, MAX_STARS, MIN_STARS } from "@/lib/builder";
+import { MAX_ITEMS, MAX_STARS } from "@/lib/builder";
 
 /**
  * Admin editor for a comp's carries — a dedicated list independent of the board
@@ -25,10 +25,8 @@ interface CompCarriesFormProps {
   initial: CompCarryInput[];
 }
 
-const STAR_LEVELS = Array.from(
-  { length: MAX_STARS - MIN_STARS + 1 },
-  (_, i) => MIN_STARS + i,
-);
+// Guide carries are meaningful at 2★/3★ (unlike the builder's base/3★ toggle).
+const STAR_LEVELS = [2, MAX_STARS];
 
 export function CompCarriesForm({
   compId,

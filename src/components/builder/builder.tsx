@@ -66,12 +66,6 @@ function newUnitId(): string {
 const TOOLBAR_BUTTON =
   "inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-muted/40";
 
-/** Star levels a unit can be set to (2–3; 1-star is not offered). */
-const STAR_LEVELS = Array.from(
-  { length: MAX_STARS - MIN_STARS + 1 },
-  (_, i) => MIN_STARS + i,
-);
-
 export function Builder({
   champions,
   traits,
@@ -251,7 +245,7 @@ export function Builder({
         championId,
         row,
         col,
-        stars: MIN_STARS,
+        stars: MIN_STARS, // base: no star shown (toggle to 3★ to change)
         items: [],
         isCarry: false,
       });
@@ -338,7 +332,8 @@ export function Builder({
     [moveUnit],
   );
 
-  // Set the star level (1–3) of a placed unit.
+  // Set a placed unit's star level. The builder toggles between 1 (base, no
+  // star shown) and 3; 2 is never set here.
   const setUnitStars = useCallback(
     (unitId: string, stars: number) => {
       const target = units.find((u) => u.id === unitId);
@@ -569,32 +564,25 @@ export function Builder({
           )}
 
           {selectedUnit ? (
-            <div
-              role="group"
-              aria-label="Nível de estrela"
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-1"
+            <button
+              type="button"
+              onClick={() =>
+                setUnitStars(
+                  selectedUnit.id,
+                  selectedUnit.stars === MAX_STARS ? MIN_STARS : MAX_STARS,
+                )
+              }
+              aria-pressed={selectedUnit.stars === MAX_STARS}
+              aria-label="Três estrelas"
+              title="Alternar 3 estrelas"
+              className={`inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                selectedUnit.stars === MAX_STARS
+                  ? "border-amber-300/50 bg-amber-400/20 text-amber-200"
+                  : "border-border bg-muted/40 text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <span className="text-xs text-muted-foreground">Estrelas:</span>
-              {STAR_LEVELS.map((level) => {
-                const active = selectedUnit.stars === level;
-                return (
-                  <button
-                    key={level}
-                    type="button"
-                    onClick={() => setUnitStars(selectedUnit.id, level)}
-                    aria-pressed={active}
-                    aria-label={`${level} estrela${level > 1 ? "s" : ""}`}
-                    className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold leading-none tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      active
-                        ? "bg-amber-400/20 text-amber-200 ring-1 ring-amber-300/50"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {level}★
-                  </button>
-                );
-              })}
-            </div>
+              3★
+            </button>
           ) : null}
 
           {adminMode && selectedUnit ? (

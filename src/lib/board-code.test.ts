@@ -10,7 +10,7 @@ import {
 
 const sample: SharedBoard = {
   units: [
-    { championId: "champ_a", row: 0, col: 0, stars: 2, items: [] },
+    { championId: "champ_a", row: 0, col: 0, stars: 1, items: [] },
     {
       championId: "champ_b",
       row: 1,
@@ -58,7 +58,7 @@ test("decodeBoard drops out-of-bounds hexes and clamps stars", () => {
       v: 1,
       u: [
         ["ok", 0, 0, 7, []], // stars clamp 7 -> 3
-        ["low", 2, 2, 1, []], // stars clamp 1 -> 2 (1-star not allowed)
+        ["low", 2, 2, 0, []], // stars clamp 0 -> 1 (min)
         ["bad-row", 9, 0, 1, []], // row out of bounds -> dropped
         ["bad-col", 0, 99, 1, []], // col out of bounds -> dropped
         [123, 0, 1, 1, []], // non-string championId -> dropped
@@ -70,7 +70,7 @@ test("decodeBoard drops out-of-bounds hexes and clamps stars", () => {
   assert.deepEqual(decoded, {
     units: [
       { championId: "ok", row: 0, col: 0, stars: 3, items: [] },
-      { championId: "low", row: 2, col: 2, stars: 2, items: [] },
+      { championId: "low", row: 2, col: 2, stars: 1, items: [] },
     ],
     augments: ["a1"],
   });

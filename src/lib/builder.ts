@@ -25,8 +25,13 @@ export const HEX_CLIP = "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0
 export const BUILDER_HEX_CLIP =
   "polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%)";
 
-/** Star levels a placed unit can have (US-026): 2–3 (1-star is not offered). */
-export const MIN_STARS = 2;
+/**
+ * Star levels a placed unit can hold (US-026). The builder uses only two: 1 =
+ * base (NO star icon shown, the default when a champion is placed) and 3 =
+ * three-star (the single toggle). 2★ is not offered in the builder. `MIN_STARS`
+ * stays 1 so a base unit is representable; `clampStars` keeps values in 1–3.
+ */
+export const MIN_STARS = 1;
 export const MAX_STARS = 3;
 
 /** Max items equippable on a single unit, and max board augments (US-027). */
@@ -37,8 +42,9 @@ export const MAX_AUGMENTS = 3;
  * A champion placed on a builder hex. `id` is a stable local identity for React
  * keys and per-unit items; it survives moves and undo/redo. The board never
  * persists server-side (in the public builder), so ids are ephemeral client
- * values. `stars` is the unit's 2–3 star level (US-026), defaulting to 2 when the
- * unit is placed. `items` holds up to `MAX_ITEMS` equipped item ids in slot order
+ * values. `stars` is the unit's star level (US-026): 1 (base, no star shown) by
+ * default when placed, or 3 via the builder's single toggle — 2 is not offered.
+ * `items` holds up to `MAX_ITEMS` equipped item ids in slot order
  * (US-027). `isCarry` marks the unit as a carry (defaults to false when placed);
  * it is only surfaced/edited in the admin builder (US-037) — the public builder
  * and the share code never expose it — but it lives on the shared model so the

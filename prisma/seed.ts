@@ -233,7 +233,7 @@ async function seedSampleData(set: string, setNumber: number): Promise<void> {
         role: "CORE",
         isCarry,
         carryOrder: isCarry ? carryIdx : null,
-        starLevel: isCarry ? 3 : 2,
+        starLevel: isCarry ? 3 : 1, // builder: carry = 3★, others = base (no star)
         boardRow: CORE_HEXES[k].row,
         boardCol: CORE_HEXES[k].col,
         order: order++,

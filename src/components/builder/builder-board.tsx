@@ -79,7 +79,7 @@ function Hex({
   const stars = unit ? clampStars(unit.stars) : 1;
   const carry = unit?.isCarry ?? false;
   const label = champion
-    ? `${champion.name}, ${stars} estrela${stars > 1 ? "s" : ""}${carry ? ", carry" : ""} — linha ${row + 1}, coluna ${col + 1}`
+    ? `${champion.name}${stars > 1 ? `, ${stars} estrelas` : ""}${carry ? ", carry" : ""} — linha ${row + 1}, coluna ${col + 1}`
     : `Hex vazio linha ${row + 1}, coluna ${col + 1}`;
 
   // Outer hex "rim" (the frame). A lighter, top-lit gradient framing the darker
@@ -173,7 +173,7 @@ function Hex({
             />
           </span>
         ) : null}
-        {champion ? (
+        {champion && stars > 1 ? (
           <span
             className="pointer-events-none absolute inset-x-0 top-[7%] text-center text-[9px] font-semibold leading-none text-amber-300 [text-shadow:0_1px_1px_rgb(0_0_0)]"
             aria-hidden="true"
