@@ -41,3 +41,5 @@ next-env.d.ts
 
 # Claude Code local settings (per-machine; e.g. impeccable detector hook)
 .claude/settings.local.json
+.vercel
+.env*

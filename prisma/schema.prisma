@@ -7,11 +7,11 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
+  // App runtime uses the pooled connection; migrations use the direct one.
+  // Vercel's Neon integration injects both DATABASE_URL (pooled) and
+  // DATABASE_URL_UNPOOLED (direct). Locally both point to the same database.
   url       = env("DATABASE_URL")
-  // Direct (non-pooled) connection used by migrations. On Neon/serverless the
-  // app runtime uses the pooled DATABASE_URL, but `prisma migrate deploy` needs
-  // a direct connection. Locally both point to the same database.
-  directUrl = env("DIRECT_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 // ---------------------------------------------------------------------------

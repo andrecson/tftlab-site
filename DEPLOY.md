@@ -8,6 +8,16 @@ Guia de publicação do app.
 > atual**. O apex `tftlab.com.br` **não** é alterado em nenhum passo aqui. A parte
 > "ir ao ar de verdade" fica separada no fim (passo 8), pra quando você validar.
 
+> ✅ **Status: o deploy de teste já está NO AR.**
+> - URL: **https://tftlab-teste.vercel.app** (noindex, escondido da busca)
+> - Projeto Vercel: `tftlab-teste` · Postgres: **Neon** (integração da Vercel,
+>   injeta `DATABASE_URL` + `DATABASE_URL_UNPOOLED`)
+> - Banco populado no 1º build (catálogo + 3 comps de exemplo + usuários)
+> - Login do curador em `/admin/login` (credenciais entregues no chat)
+> - Redeploy futuro: `vercel --prod` na pasta do projeto
+>
+> Os passos abaixo documentam o processo do zero (útil pra refazer / ir ao ar).
+
 O TFTLab é um app **Next.js full-stack** (server actions, autenticação, ISR) com
 banco **Postgres** — ele **não é** um site estático e **não roda** em hospedagem
 compartilhada comum. A arquitetura escolhida:
