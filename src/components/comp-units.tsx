@@ -17,11 +17,9 @@ import type { CompDetail } from "@/server/queries/comp";
 type CompUnitDetail = CompDetail["units"][number];
 type UnitRole = CompUnitDetail["role"];
 
-/** Sections in display order; the AC fixes these labels. */
+/** Only the final board (Core/Final) is shown on the guide — Early/Flex removed. */
 const ROLE_SECTIONS: { role: UnitRole; label: string }[] = [
-  { role: "EARLY", label: "Early Units" },
   { role: "CORE", label: "Core/Final" },
-  { role: "FLEX", label: "Flex Units" },
 ];
 
 function UnitCard({ unit }: { unit: CompUnitDetail }) {

@@ -17,13 +17,13 @@
  * writing so a stale/cross-set id can't trip an FK or place a phantom unit.
  */
 import { UnitRole } from "@prisma/client";
+import { revalidateTag } from "next/cache";
 
 import { requireRole } from "@/auth";
 import {
   BOARD_COLS,
   BOARD_ROWS,
   clampStars,
-  MAX_AUGMENTS,
   MAX_ITEMS,
 } from "@/lib/builder";
 import { db } from "@/server/db";
@@ -132,7 +132,8 @@ export async function saveCompBoard(
     }
   }
 
-  const augmentIds = dedupe(cleanIds(input.augmentIds)).slice(0, MAX_AUGMENTS);
+  // Recommended augments for the comp guide are uncapped (unlimited).
+  const augmentIds = dedupe(cleanIds(input.augmentIds));
   if (augmentIds.length > 0) {
     const found = await db.augment.count({
       where: { set: comp.set, id: { in: augmentIds } },
@@ -183,6 +184,11 @@ export async function saveCompBoard(
       });
     }
   });
+
+  // Board edits change what the public comp page renders (board, carries,
+  // per-unit items, recommended augments) — refresh its ISR cache + tier list.
+  revalidateTag(`comp:${comp.slug}`);
+  revalidateTag("tierlist");
 
   return { ok: true, id: comp.id, slug: comp.slug };
 }

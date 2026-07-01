@@ -76,6 +76,7 @@ export function AdminBuilder({
       augments={augments}
       initialUnits={initialUnits}
       initialAugments={initialAugments}
+      maxAugments={Infinity}
       onSave={handleSave}
     />
   );

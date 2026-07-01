@@ -1,4 +1,3 @@
-import Image from "next/image";
 import type { Difficulty } from "@prisma/client";
 
 import { TIER_META } from "@/lib/tiers";
@@ -81,30 +80,6 @@ export function CompHeader({ comp, currentPatchId }: CompHeaderProps) {
         </div>
       </dl>
 
-      {comp.traits.length > 0 && (
-        <ul className="flex flex-wrap items-center gap-2">
-          {comp.traits.map((compTrait) => (
-            <li
-              key={compTrait.id}
-              className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 px-2 py-1 text-sm"
-            >
-              <Image
-                src={compTrait.trait.iconUrl}
-                alt=""
-                width={18}
-                height={18}
-                className="h-[18px] w-[18px]"
-              />
-              <span className="font-medium text-foreground">
-                {compTrait.trait.name}
-              </span>
-              <span className="tabular-nums text-muted-foreground">
-                {compTrait.level}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
     </header>
   );
 }

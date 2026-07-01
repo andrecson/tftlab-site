@@ -21,8 +21,10 @@ interface AugmentPickerProps {
   augmentsById: Map<string, BuilderAugment>;
   /** Selected augment ids (pick order). */
   selected: string[];
-  /** Toggle an augment on/off (capped at MAX_AUGMENTS by the parent). */
+  /** Toggle an augment on/off (capped at `maxAugments` by the parent). */
   onToggle: (augmentId: string) => void;
+  /** Max augments selectable (default MAX_AUGMENTS; pass Infinity for unlimited). */
+  maxAugments?: number;
 }
 
 export function AugmentPicker({
@@ -30,13 +32,14 @@ export function AugmentPicker({
   augmentsById,
   selected,
   onToggle,
+  maxAugments = MAX_AUGMENTS,
 }: AugmentPickerProps) {
   const [query, setQuery] = useState("");
   // A busca + grid de augments so aparecem quando o usuario clica num slot "+".
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const selectedIds = useMemo(() => new Set(selected), [selected]);
-  const full = selected.length >= MAX_AUGMENTS;
+  const full = selected.length >= maxAugments;
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -64,47 +67,46 @@ export function AugmentPicker({
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold text-foreground">Augments</h2>
         <span className="text-xs text-muted-foreground tabular-nums">
-          {selected.length}/{MAX_AUGMENTS}
+          {selected.length}
+          {Number.isFinite(maxAugments) ? `/${maxAugments}` : ""}
         </span>
       </div>
 
-      {/* Chosen augment slots — empilhados e centralizados na coluna estreita. */}
+      {/* Selecionados (cada um removivel) + um "+" para adicionar. Sem numero
+          fixo de slots, para permitir augments ilimitados. */}
       <ul className="flex flex-col items-center gap-2">
-        {Array.from({ length: MAX_AUGMENTS }, (_, slot) => {
-          const augmentId = selected[slot];
-          const augment = augmentId ? augmentsById.get(augmentId) : undefined;
+        {selected.map((augmentId) => {
+          const augment = augmentsById.get(augmentId);
+          if (!augment) return null;
           return (
-            <li key={slot}>
-              {augment ? (
-                <span className="relative inline-flex">
-                  <IconTooltip
-                    src={augment.iconUrl}
-                    name={augment.name}
-                    size={44}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onToggle(augment.id)}
-                    aria-label={`Remover ${augment.name}`}
-                    className="absolute -right-1.5 -top-1.5 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold leading-none text-destructive-foreground ring-1 ring-background transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    ×
-                  </button>
-                </span>
-              ) : (
+            <li key={augmentId}>
+              <span className="relative inline-flex">
+                <IconTooltip src={augment.iconUrl} name={augment.name} size={44} />
                 <button
                   type="button"
-                  onClick={() => setPickerOpen((open) => !open)}
-                  aria-label="Adicionar augment"
-                  aria-expanded={pickerOpen}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-dashed border-border text-lg leading-none text-muted-foreground/70 transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => onToggle(augment.id)}
+                  aria-label={`Remover ${augment.name}`}
+                  className="absolute -right-1.5 -top-1.5 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold leading-none text-destructive-foreground ring-1 ring-background transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  +
+                  ×
                 </button>
-              )}
+              </span>
             </li>
           );
         })}
+        {!full ? (
+          <li>
+            <button
+              type="button"
+              onClick={() => setPickerOpen((open) => !open)}
+              aria-label="Adicionar augment"
+              aria-expanded={pickerOpen}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-dashed border-border text-lg leading-none text-muted-foreground/70 transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              +
+            </button>
+          </li>
+        ) : null}
       </ul>
 
       {pickerOpen ? (

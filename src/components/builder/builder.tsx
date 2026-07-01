@@ -12,6 +12,7 @@ import {
   addUnitItem,
   BOARD_COLS,
   BOARD_ROWS,
+  MAX_AUGMENTS,
   MAX_ITEMS,
   MAX_STARS,
   MIN_STARS,
@@ -78,6 +79,7 @@ export function Builder({
   augments,
   initialUnits = [],
   initialAugments = [],
+  maxAugments = MAX_AUGMENTS,
   onSave,
 }: {
   champions: BuilderChampion[];
@@ -86,6 +88,8 @@ export function Builder({
   augments: BuilderAugment[];
   initialUnits?: PlacedUnit[];
   initialAugments?: string[];
+  /** Max augments selectable (default MAX_AUGMENTS; pass Infinity for unlimited). */
+  maxAugments?: number;
   /**
    * When provided, the builder runs in admin save mode (US-037): it persists the
    * board through this callback instead of mirroring it into the URL. Receives
@@ -387,9 +391,12 @@ export function Builder({
   );
 
   // Toggle a board augment (add/remove, capped at MAX_AUGMENTS).
-  const handleToggleAugment = useCallback((augmentId: string) => {
-    setSelectedAugments((prev) => toggleAugment(prev, augmentId));
-  }, []);
+  const handleToggleAugment = useCallback(
+    (augmentId: string) => {
+      setSelectedAugments((prev) => toggleAugment(prev, augmentId, maxAugments));
+    },
+    [maxAugments],
+  );
 
   // Admin (US-037): toggle a placed unit's carry flag (undoable via history).
   const toggleSelectedCarry = useCallback(() => {
@@ -659,6 +666,7 @@ export function Builder({
                 augmentsById={augmentsById}
                 selected={selectedAugments}
                 onToggle={handleToggleAugment}
+                maxAugments={maxAugments}
               />
             </div>
           ) : null}

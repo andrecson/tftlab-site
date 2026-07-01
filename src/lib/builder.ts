@@ -80,11 +80,12 @@ export function removeUnitItemAt(
 export function toggleAugment(
   augments: readonly string[],
   augmentId: string,
+  max: number = MAX_AUGMENTS,
 ): string[] {
   if (augments.includes(augmentId)) {
     return augments.filter((id) => id !== augmentId);
   }
-  if (augments.length >= MAX_AUGMENTS) return [...augments];
+  if (augments.length >= max) return [...augments];
   return [...augments, augmentId];
 }
 

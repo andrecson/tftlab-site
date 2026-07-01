@@ -3,71 +3,72 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { BOARD_COLS, BOARD_ROWS, BUILDER_HEX_CLIP } from "@/lib/builder";
 import type { CompDetail } from "@/server/queries/comp";
 
 /**
- * Board positioning of a comp-detail page (US-020).
- *
- * `CompBoard` renders the final composition on a 4×7 hexagonal grid, placing each
- * on-board unit at its `boardRow`/`boardCol` (0-indexed; off-board EARLY/FLEX
- * units — null coords — are excluded). Odd rows are shifted half a hex so the
- * cells interlock into a honeycomb, and the whole board is sized in percentages
- * so it scales down to mobile width with NO horizontal scroll.
- *
- * A "Mostrar nomes" toggle overlays each unit's name; carries are highlighted
- * with the brand gradient ring. This is a client component (the toggle needs
- * `useState`) — that does not make the page dynamic (no request-time APIs), so
- * the comp route stays statically rendered.
+ * Board positioning of a comp-detail page (US-020), styled to match the builder
+ * board (`builder-board.tsx`): solid-colour pointy-top hexes with a gap (a
+ * per-cell wrapper inset so every hex is the same size), a slate rim for units,
+ * amber for carries. Read-only — no drag/click. A "Mostrar nomes" toggle overlays
+ * each unit's name. Client component (the toggle needs `useState`), but it uses
+ * no request-time APIs so the comp route stays statically rendered.
  */
-const BOARD_ROWS = 4;
-const BOARD_COLS = 7;
-
-/** Pointy-top hexagon — cells offset horizontally + overlapped form a honeycomb. */
-const HEX_CLIP = "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)";
-
 type CompUnitDetail = CompDetail["units"][number];
 
-function Hex({ unit, showName }: { unit: CompUnitDetail | null; showName: boolean }) {
+function Hex({
+  unit,
+  showName,
+}: {
+  unit: CompUnitDetail | null;
+  showName: boolean;
+}) {
   const carry = unit?.isCarry ?? false;
+  const rimClass = unit
+    ? carry
+      ? "bg-amber-400"
+      : "bg-slate-500/80"
+    : "bg-[#35496b]";
   return (
     <div className="relative aspect-square w-[13.333%] shrink-0">
-      {/* Carry glow — a slightly larger gradient hex behind the tile. */}
-      {carry ? (
-        <div
-          className="absolute inset-0 bg-brand-gradient opacity-90 drop-shadow-[0_0_4px_rgba(94,234,212,0.6)]"
-          style={{ clipPath: HEX_CLIP }}
-        />
-      ) : null}
-      {/* Ring / tile background (clipped to the hex). */}
       <div
-        className={
-          unit
-            ? carry
-              ? "absolute inset-[2px] bg-brand-gradient"
-              : "absolute inset-[2px] bg-slate-600"
-            : "absolute inset-[2px] bg-muted/30"
+        className="absolute inset-[7%]"
+        style={
+          carry
+            ? { filter: "drop-shadow(0 0 3px rgba(251,191,36,0.65))" }
+            : undefined
         }
-        style={{ clipPath: HEX_CLIP }}
-      />
-      {unit ? (
-        <div
-          className={`absolute overflow-hidden ${carry ? "inset-[4px]" : "inset-[3px]"}`}
-          style={{ clipPath: HEX_CLIP }}
-        >
-          <Image
-            src={unit.champion.iconUrl}
-            alt={unit.champion.name}
-            fill
-            sizes="64px"
-            className="object-cover"
-          />
-        </div>
-      ) : null}
-      {unit && showName ? (
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 z-10 truncate px-0.5 text-center text-[8px] font-semibold leading-tight text-foreground [text-shadow:0_1px_2px_rgb(0_0_0)]">
-          {unit.champion.name}
-        </span>
-      ) : null}
+      >
+        {/* Outer rim (the border) */}
+        <span
+          className={`absolute inset-0 ${rimClass}`}
+          style={{ clipPath: BUILDER_HEX_CLIP }}
+        />
+        {/* Inner dark well */}
+        <span
+          className="absolute inset-[8%] bg-[#0a1322]"
+          style={{ clipPath: BUILDER_HEX_CLIP }}
+        />
+        {unit ? (
+          <span
+            className="absolute inset-[8%] overflow-hidden"
+            style={{ clipPath: BUILDER_HEX_CLIP }}
+          >
+            <Image
+              src={unit.champion.iconUrl}
+              alt={unit.champion.name}
+              fill
+              sizes="64px"
+              className="object-cover"
+            />
+          </span>
+        ) : null}
+        {unit && showName ? (
+          <span className="pointer-events-none absolute inset-x-[6%] bottom-[10%] z-10 truncate rounded-sm bg-black/60 px-0.5 text-center text-[8px] font-semibold leading-tight text-foreground">
+            {unit.champion.name}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -100,14 +101,19 @@ export function CompBoard({ units }: { units: CompDetail["units"] }) {
         </button>
       </div>
 
-      <div className="mx-auto w-full max-w-md rounded-lg border border-border bg-card/40 p-2 sm:p-3">
+      <div className="mx-auto w-full max-w-lg rounded-xl border border-[#20344f] bg-[#122236] p-3 shadow-inner sm:p-4">
         <div className="flex flex-col">
           {Array.from({ length: BOARD_ROWS }, (_, row) => (
             <div
               key={row}
-              className={`flex ${row % 2 === 1 ? "pl-[6.667%]" : ""}`}
+              className="flex"
               style={row > 0 ? { marginTop: "-2.5%" } : undefined}
             >
+              {/* Half-hex offset for odd rows via a spacer (not padding) so all
+                  hexes keep the same size — mirrors the builder board. */}
+              {row % 2 === 1 ? (
+                <div className="w-[6.667%] shrink-0" aria-hidden="true" />
+              ) : null}
               {Array.from({ length: BOARD_COLS }, (_, col) => (
                 <Hex
                   key={col}
