@@ -71,8 +71,12 @@ interface MultipleProps extends BaseProps {
 
 export type CatalogPickerProps = SingleProps | MultipleProps;
 
-/** Max options rendered in the dropdown at once (keeps the DOM light). */
-const MAX_RESULTS = 50;
+/**
+ * Max options rendered in the dropdown at once (keeps the DOM light). Must stay
+ * above the champion count (~63) so the unfiltered champion picker doesn't hide
+ * the last, highest-cost champions (they sort last by cost).
+ */
+const MAX_RESULTS = 100;
 
 /** Small square icon for a chip/option, with a graceful blank fallback. */
 function OptionIcon({

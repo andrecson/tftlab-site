@@ -145,6 +145,42 @@ export async function getBuilderTraits(
  * be handed to the `"use client"` builder as props. The `type` field drives the
  * panel's tabs (craftables/radiants/artifacts/components/others).
  */
+/**
+ * Champion-token / placeholder rows that live in the Item table but are NOT
+ * equippable items — they must not appear in the builder/guide item pickers:
+ *  - "Chosen champion" items (apiId `..._ChampionItem_...`), named like champions
+ *    ("1-cost: Aatrox") — these made the item list look like the champion list.
+ *  - Champion loot tokens ("2-star 1-cost: Veigar", "3-star Illaoi").
+ *  - Untranslated placeholder keys ("TFT_item_name_Yuumi").
+ */
+function isEquippableItem(item: { apiId: string; name: string }): boolean {
+  if (item.apiId.includes("ChampionItem")) return false;
+  if (/cost:/i.test(item.name)) return false;
+  if (/^\d+-star\b/i.test(item.name)) return false;
+  if (/^TFT[\w]*_/i.test(item.name)) return false;
+  return true;
+}
+
+/** Lower is more canonical: base item preferred over Corrupted/Radiant variants. */
+function itemVariantScore(apiId: string): number {
+  let score = 0;
+  if (/corrupted/i.test(apiId)) score += 2;
+  if (/radiant/i.test(apiId)) score += 1;
+  return score;
+}
+
+/** True if `a` is a more canonical variant than `b` for the same display name. */
+function isMoreCanonicalItem(
+  a: { apiId: string },
+  b: { apiId: string },
+): boolean {
+  const sa = itemVariantScore(a.apiId);
+  const sb = itemVariantScore(b.apiId);
+  if (sa !== sb) return sa < sb;
+  if (a.apiId.length !== b.apiId.length) return a.apiId.length < b.apiId.length;
+  return a.apiId < b.apiId;
+}
+
 export async function getBuilderItems(set?: string): Promise<BuilderItem[]> {
   const resolvedSet = set ?? (await getCurrentSet());
   if (!resolvedSet) return [];
@@ -155,13 +191,27 @@ export async function getBuilderItems(set?: string): Promise<BuilderItem[]> {
     select: { id: true, apiId: true, name: true, iconUrl: true, type: true },
   });
 
-  return items.map((item) => ({
-    id: item.id,
-    apiId: item.apiId,
-    name: item.name,
-    iconUrl: item.iconUrl,
-    type: item.type,
-  }));
+  // Drop champion tokens / placeholders (issue: item list showed champions),
+  // then collapse duplicate display names — Corrupted/Radiant variants share a
+  // name — to a single canonical entry (issue: duplicate items in the builder).
+  const byName = new Map<string, (typeof items)[number]>();
+  for (const item of items) {
+    if (!isEquippableItem(item)) continue;
+    const existing = byName.get(item.name);
+    if (!existing || isMoreCanonicalItem(item, existing)) {
+      byName.set(item.name, item);
+    }
+  }
+
+  return [...byName.values()]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((item) => ({
+      id: item.id,
+      apiId: item.apiId,
+      name: item.name,
+      iconUrl: item.iconUrl,
+      type: item.type,
+    }));
 }
 
 /**
