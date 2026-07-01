@@ -52,3 +52,16 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+
+/* Respect reduced-motion everywhere: neutralize transitions/animations (e.g. the
+   tier-card hover scale) into an instant change instead of motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
