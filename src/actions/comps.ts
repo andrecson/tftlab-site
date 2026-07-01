@@ -228,7 +228,13 @@ export async function setCompTier(
   });
   if (!comp) return { ok: false, error: "Comp não encontrada." };
 
-  await db.comp.update({ where: { id: compId }, data: { tier } });
+  // The X band is the situational band, not a tier: moving to X sets the
+  // `situational` flag (keeping the comp's S/A/B/C tier for its badge); moving
+  // to S/A/B/C sets that tier and clears `situational`.
+  await db.comp.update({
+    where: { id: compId },
+    data: tier === "X" ? { situational: true } : { tier, situational: false },
+  });
 
   // A published comp's public pages are ISR-cached; re-bucket it on the live
   // tier list (and refresh its comp page) when its tier changes.

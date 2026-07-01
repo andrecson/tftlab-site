@@ -72,7 +72,7 @@ export function CompHeader({ comp, currentPatchId }: CompHeaderProps) {
           </div>
           <p className="text-sm text-muted-foreground">
             {tierMeta.label}
-            {comp.situational && comp.tier !== "X" && " · Situacional"}
+            {comp.situational && " · Situacional"}
           </p>
         </div>
       </div>

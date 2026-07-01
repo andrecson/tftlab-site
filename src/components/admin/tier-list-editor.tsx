@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CompStatus, Tier } from "@prisma/client";
 import { setCompTier } from "@/actions/comps";
-import { groupByTier, TIER_META, TIER_ORDER } from "@/lib/tiers";
+import { bandOf, groupByTier, TIER_META, TIER_ORDER } from "@/lib/tiers";
 import type { AdminTierListComp } from "@/server/queries/admin";
 
 /**
@@ -43,34 +43,35 @@ export function TierListEditor({ comps: initialComps }: TierListEditorProps) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  async function moveComp(comp: AdminTierListComp, tier: Tier) {
-    if (comp.tier === tier || pending) return;
+  async function moveComp(comp: AdminTierListComp, band: Tier) {
+    if (bandOf(comp) === band || pending) return;
 
-    const previousTier = comp.tier;
+    const previous = { tier: comp.tier, situational: comp.situational };
     setError(null);
     setNotice(null);
     setPending(comp.id);
 
-    // Optimistic: move the card to its new band right away.
+    // Optimistic: the X band is situational (keep the S/A/B/C tier); S/A/B/C set
+    // that tier and clear situational.
+    const patch =
+      band === "X" ? { situational: true } : { tier: band, situational: false };
     setComps((prev) =>
-      prev.map((c) => (c.id === comp.id ? { ...c, tier } : c)),
+      prev.map((c) => (c.id === comp.id ? { ...c, ...patch } : c)),
     );
 
-    const result = await setCompTier(comp.id, tier);
+    const result = await setCompTier(comp.id, band);
     setPending(null);
 
     if (!result.ok) {
       // Revert the optimistic move on failure.
       setComps((prev) =>
-        prev.map((c) =>
-          c.id === comp.id ? { ...c, tier: previousTier } : c,
-        ),
+        prev.map((c) => (c.id === comp.id ? { ...c, ...previous } : c)),
       );
       setError(result.error);
       return;
     }
 
-    setNotice(`"${comp.name}" movida para ${TIER_META[tier].label}.`);
+    setNotice(`"${comp.name}" movida para ${TIER_META[band].label}.`);
     // Keep sibling server reads (nav/dashboard counts) fresh on next navigation;
     // local state above remains the source of truth for this list.
     router.refresh();
@@ -177,7 +178,7 @@ export function TierListEditor({ comps: initialComps }: TierListEditorProps) {
                         className="flex shrink-0 items-center gap-1"
                       >
                         {TIER_ORDER.map((target) => {
-                          const isCurrent = comp.tier === target;
+                          const isCurrent = bandOf(comp) === target;
                           return (
                             <button
                               key={target}

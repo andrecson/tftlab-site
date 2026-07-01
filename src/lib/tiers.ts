@@ -15,6 +15,21 @@ import type { Tier } from "@prisma/client";
 export const TIER_ORDER: readonly Tier[] = ["S", "A", "B", "C", "X"] as const;
 
 /**
+ * Tiers a comp can be MARKED as. `X` is NOT assignable — it's the situational
+ * band, populated by the `situational` flag (see `bandOf`), not by the tier.
+ */
+export const ASSIGNABLE_TIERS: readonly Tier[] = ["S", "A", "B", "C"] as const;
+
+/**
+ * The band a comp is DISPLAYED in. Situational comps live in the `X`
+ * (Situacional) band regardless of their marked S/A/B/C tier; everything else
+ * sits in its own tier band.
+ */
+export function bandOf(comp: { tier: Tier; situational: boolean }): Tier {
+  return comp.situational ? "X" : comp.tier;
+}
+
+/**
  * Type guard for a tier band — accepts only the S/A/B/C/X strings. Lets a server
  * action validate an untrusted `tier` argument before writing it (US-046
  * `setCompTier`). Pure/client-safe like the rest of this module.
@@ -35,12 +50,12 @@ export interface TierGroup<T> {
  * Group a flat list of comps (anything with a `tier`) into the fixed S/A/B/C/X
  * bands. Every band is always present (possibly empty) and in display order.
  */
-export function groupByTier<T extends { tier: Tier }>(
+export function groupByTier<T extends { tier: Tier; situational: boolean }>(
   comps: T[],
 ): TierGroup<T>[] {
   return TIER_ORDER.map((tier) => ({
     tier,
-    comps: comps.filter((comp) => comp.tier === tier),
+    comps: comps.filter((comp) => bandOf(comp) === tier),
   }));
 }
 

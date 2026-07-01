@@ -23,12 +23,13 @@ import { slugify } from "@/lib/slug";
  * (US-038), which enforce FR-20 before a comp can go live.
  */
 
+// Situacional (X) is NOT a tier here — it's the `situational` checkbox below,
+// which routes the comp to the Situacional band keeping its S/A/B/C tier badge.
 const TIER_OPTIONS: { value: Tier; label: string }[] = [
   { value: "S", label: "S" },
   { value: "A", label: "A" },
   { value: "B", label: "B" },
   { value: "C", label: "C" },
-  { value: "X", label: "Situacional (X)" },
 ];
 
 const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
@@ -233,7 +234,8 @@ export function CompForm({ patches, comp, champions }: CompFormProps) {
             className="h-4 w-4 rounded border-input bg-background text-primary focus-visible:ring-2 focus-visible:ring-ring"
           />
           <span className="text-muted-foreground">
-            Comp situacional (depende do lobby/augments)
+            Comp situacional — vai para a faixa Situacional, com o tier acima
+            (S/A/B/C) exibido como badge
           </span>
         </label>
       </fieldset>

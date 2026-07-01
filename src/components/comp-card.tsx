@@ -31,7 +31,7 @@ export function CompCard({ comp, currentPatchId }: CompCardProps) {
   return (
     <Link
       href={`/comps/${comp.slug}`}
-      aria-label={`Ver comp ${comp.name}`}
+      aria-label={`Ver comp ${comp.name}${comp.situational ? ` (tier ${comp.tier}, situacional)` : ""}`}
       title={comp.name}
       className="group relative block shrink-0 rounded-md transition-transform hover:z-10 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
@@ -61,6 +61,17 @@ export function CompCard({ comp, currentPatchId }: CompCardProps) {
           )}
         </span>
       </span>
+
+      {/* Situational comps sit in the X band; this badge shows the marked
+          S/A/B/C tier so the card stays legible outside its own band. */}
+      {comp.situational && (
+        <span
+          className={`pointer-events-none absolute bottom-0 left-1/2 z-10 -translate-x-1/2 translate-y-1/4 rounded px-1 py-px text-[10px] font-extrabold leading-none text-background ${TIER_META[comp.tier].chipClass}`}
+          aria-hidden="true"
+        >
+          {comp.tier}
+        </span>
+      )}
 
       {(isNew || isUpdated) && (
         <span className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/3 rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-primary-foreground">

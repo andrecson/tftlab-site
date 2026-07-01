@@ -120,6 +120,7 @@ const adminTierListSelect = Prisma.validator<Prisma.CompSelect>()({
   name: true,
   slug: true,
   tier: true,
+  situational: true,
   status: true,
 });
 
