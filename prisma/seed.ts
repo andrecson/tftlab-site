@@ -218,7 +218,7 @@ async function seedSampleData(set: string, setNumber: number): Promise<void> {
         role: "EARLY",
         isCarry: false,
         carryOrder: null,
-        starLevel: 1,
+        starLevel: 2,
         boardRow: null,
         boardCol: null,
         order: order++,

@@ -25,15 +25,15 @@ const unit = (
   isCarry: false,
 });
 
-test("clampStars keeps 1–3 and rounds/floors out-of-range values", () => {
-  assert.equal(clampStars(1), 1);
+test("clampStars keeps 2–3 (1-star not allowed) and rounds/floors out-of-range values", () => {
+  assert.equal(clampStars(1), 2);
   assert.equal(clampStars(2), 2);
   assert.equal(clampStars(3), 3);
-  assert.equal(clampStars(0), 1);
-  assert.equal(clampStars(-5), 1);
+  assert.equal(clampStars(0), 2);
+  assert.equal(clampStars(-5), 2);
   assert.equal(clampStars(7), 3);
   assert.equal(clampStars(2.4), 2);
-  assert.equal(clampStars(NaN), 1);
+  assert.equal(clampStars(NaN), 2);
 });
 
 test("teamGoldValue sums champion cost scaled by star level", () => {
@@ -43,25 +43,26 @@ test("teamGoldValue sums champion cost scaled by star level", () => {
   // Empty board is worth nothing.
   assert.equal(teamGoldValue([], costOf), 0);
 
-  // A single 1★ unit is just its base cost.
-  assert.equal(teamGoldValue([unit("a", 1)], costOf), 1);
-
   // 2★ = ×3, 3★ = ×9 of the base cost (TFT combine math).
   assert.equal(teamGoldValue([unit("b", 2)], costOf), 9);
   assert.equal(teamGoldValue([unit("c", 3)], costOf), 45);
 
+  // A 1★ input is clamped to 2★ (1-star is not allowed), so ×3.
+  assert.equal(teamGoldValue([unit("a", 1)], costOf), 3);
+
   // Mixed board sums each unit's scaled value.
   assert.equal(
-    teamGoldValue([unit("a", 1, 0, 0), unit("b", 2, 0, 1), unit("c", 1, 0, 2)], costOf),
-    1 + 9 + 5,
+    teamGoldValue([unit("a", 2, 0, 0), unit("b", 2, 0, 1), unit("c", 3, 0, 2)], costOf),
+    3 + 9 + 45,
   );
 });
 
 test("teamGoldValue skips champions with unknown/invalid cost", () => {
   const costOf = (id: string) => (id === "known" ? 4 : 0);
+  // "known" 2★ = 4×3 = 12; "missing" (cost 0) contributes nothing.
   assert.equal(
-    teamGoldValue([unit("known", 1, 0, 0), unit("missing", 3, 0, 1)], costOf),
-    4,
+    teamGoldValue([unit("known", 2, 0, 0), unit("missing", 3, 0, 1)], costOf),
+    12,
   );
 });
 

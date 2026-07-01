@@ -66,7 +66,7 @@ function newUnitId(): string {
 const TOOLBAR_BUTTON =
   "inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-muted/40";
 
-/** Star levels a unit can be set to (1–3). */
+/** Star levels a unit can be set to (2–3; 1-star is not offered). */
 const STAR_LEVELS = Array.from(
   { length: MAX_STARS - MIN_STARS + 1 },
   (_, i) => MIN_STARS + i,
@@ -251,7 +251,7 @@ export function Builder({
         championId,
         row,
         col,
-        stars: 1,
+        stars: MIN_STARS,
         items: [],
         isCarry: false,
       });
