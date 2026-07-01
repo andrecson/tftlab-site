@@ -12,6 +12,12 @@ const nextConfig = {
         protocol: "https",
         hostname: "raw.communitydragon.org",
       },
+      // Marketing images (hero logo, mentors, etc.) exported from the old
+      // Hostinger Horizons site live on its CDN.
+      {
+        protocol: "https",
+        hostname: "horizons-cdn.hostinger.com",
+      },
     ],
     // US-042 (perf): serve modern, smaller formats. next/image negotiates AVIF
     // first, then WebP, then the original — this cuts icon bytes on the tier

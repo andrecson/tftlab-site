@@ -29,6 +29,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 1,
     },
+    {
+      url: absoluteUrl("/tier-list"),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    { url: absoluteUrl("/planos"), changeFrequency: "monthly", priority: 0.7 },
+    { url: absoluteUrl("/loja"), changeFrequency: "monthly", priority: 0.6 },
+    { url: absoluteUrl("/sobre"), changeFrequency: "yearly", priority: 0.4 },
     ...compEntries,
   ];
 }

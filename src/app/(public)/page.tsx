@@ -1,59 +1,79 @@
 import type { Metadata } from "next";
-import { unstable_cache } from "next/cache";
+import Link from "next/link";
 
-import { PageHeading } from "@/components/page-heading";
-import { TierBands } from "@/components/tier-bands";
-import { groupByTier } from "@/lib/tiers";
-import { getSiteConfig } from "@/server/queries/config";
-import { getPublishedComps } from "@/server/queries/tierlist";
+import { Hero } from "@/components/marketing/hero";
 
 /**
- * Tier-list page (US-014) — served at `/`.
- *
- * Statically rendered with ISR: every PUBLISHED comp is fetched on the server
- * (wrapped in `unstable_cache` tagged `tierlist`, so publishing/unpublishing a
- * comp — US-038 — can refresh it via `revalidateTag("tierlist")`) and rendered
- * directly in the S/A/B/C/X bands. The page reads no request-time APIs, so it
- * stays static.
- *
- * US-043 removed the client-side filter bar (tier/synergy/champion/search): the
- * tier list now shows every published comp with no filter controls or drawer.
+ * Landing / home (`/`) — the coaching front door ported from the old
+ * tftlab.com.br, now the single site's entry point. The tier list moved to
+ * `/tier-list`. More landing sections (benefits, mentors, testimonials, plans
+ * preview, FAQ) are being ported in incrementally.
  */
-export const revalidate = 3600;
-
-/** Canonical URL for the tier-list homepage (US-023). */
 export const metadata: Metadata = {
+  title: "TFTLab — Coaching, tier lists e guias de Teamfight Tactics",
+  description:
+    "Evolua no Teamfight Tactics com coaching profissional, tier lists atualizadas do patch e guias de especialistas. Aulas semanais e ferramentas grátis (tier list + builder).",
   alternates: { canonical: "/" },
 };
 
-/**
- * Cached flat list of PUBLISHED comps plus the current patch id used to derive
- * the Novo/Atualizado badges on each card. Both are read under the `tierlist`
- * tag so a publish or patch change (US-038/US-039) refreshes the badges too.
- */
-const getTierListData = unstable_cache(
-  async () => {
-    const [comps, config] = await Promise.all([
-      getPublishedComps(),
-      getSiteConfig(),
-    ]);
-    return { comps, currentPatchId: config?.currentPatchId ?? null };
+const EXPLORE = [
+  {
+    href: "/tier-list",
+    title: "Tier List",
+    desc: "As comps mais fortes do patch, ranqueadas por tier — com carries, itens e augments.",
+    cta: "Ver tier list",
   },
-  ["tierlist-page-data"],
-  { tags: ["tierlist"] },
-);
+  {
+    href: "/builder",
+    title: "Builder",
+    desc: "Monte seu board hexágono a hexágono, defina estrelas e itens, e compartilhe por link.",
+    cta: "Abrir builder",
+  },
+  {
+    href: "/planos",
+    title: "Coaching",
+    desc: "Aulas semanais com mentores internacionais e acompanhamento para subir de elo.",
+    cta: "Ver planos",
+  },
+] as const;
 
-export default async function TierListPage() {
-  const { comps, currentPatchId } = await getTierListData();
-
+export default function HomePage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <PageHeading
-        title="Tier List"
-        subtitle="As comps mais fortes do patch — ranqueadas por força."
-      />
+    <>
+      <Hero />
 
-      <TierBands groups={groupByTier(comps)} currentPatchId={currentPatchId} />
-    </div>
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <h2 className="text-center text-2xl font-extrabold uppercase tracking-tight sm:text-3xl">
+          Explore o <span className="text-primary">Lab</span>
+        </h2>
+        <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-muted-foreground">
+          Ferramentas grátis pra dominar o meta + coaching pra evoluir de verdade.
+        </p>
+
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+          {EXPLORE.map((item) => (
+            <Link
+              key={item.title}
+              href={item.href}
+              className="group flex flex-col rounded-xl border border-border bg-card p-6 transition-colors hover:border-primary/50"
+            >
+              <h3 className="text-lg font-bold text-foreground">{item.title}</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                {item.desc}
+              </p>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
+                {item.cta}
+                <span
+                  aria-hidden="true"
+                  className="transition-transform group-hover:translate-x-0.5"
+                >
+                  →
+                </span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </>
   );
 }
