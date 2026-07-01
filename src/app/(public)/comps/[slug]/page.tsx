@@ -172,7 +172,7 @@ export default async function CompDetailPage({
   };
 
   return (
-    <article className="mx-auto max-w-4xl px-4 py-8">
+    <article className="mx-auto max-w-6xl px-4 py-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -186,16 +186,23 @@ export default async function CompDetailPage({
       <div className="mt-6">
         <OpenInBuilder comp={comp} />
       </div>
-      <div className="mt-8 flex flex-col gap-8">
-        <CompCarries units={comp.units} />
-        <CompItemPriority items={comp.itemPriority} />
-        <CompBoard units={comp.units} />
-        <CompUnits units={comp.units} />
-        <CompAugments
-          augments={comp.augments}
-          augmentPriority={comp.augmentPriority}
-        />
-        <CompGuide comp={comp} />
+      {/* Two-column guide layout (tftips-style): the visual roster (board,
+          carries, items, augments) on the left; the written guide + unit lists
+          on the right. Collapses to a single column below lg. */}
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-8">
+          <CompBoard units={comp.units} />
+          <CompCarries units={comp.units} />
+          <CompItemPriority items={comp.itemPriority} />
+          <CompAugments
+            augments={comp.augments}
+            augmentPriority={comp.augmentPriority}
+          />
+        </div>
+        <div className="flex min-w-0 flex-col gap-8">
+          <CompGuide comp={comp} />
+          <CompUnits units={comp.units} />
+        </div>
       </div>
     </article>
   );
