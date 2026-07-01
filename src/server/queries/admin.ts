@@ -295,19 +295,6 @@ export async function getAdminCompAugments(compId: string): Promise<string[]> {
   return augments.map((a) => a.augmentId);
 }
 
-/** Load a comp's chosen situational-badge item/augment ids for the badge form. */
-export async function getAdminCompSituationalBadge(
-  compId: string,
-): Promise<{ itemId: string | null; augmentId: string | null }> {
-  const comp = await db.comp.findUnique({
-    where: { id: compId },
-    select: { situationalItemId: true, situationalAugmentId: true },
-  });
-  return {
-    itemId: comp?.situationalItemId ?? null,
-    augmentId: comp?.situationalAugmentId ?? null,
-  };
-}
 
 /**
  * The general item priority + augment-category priority a curator edits in

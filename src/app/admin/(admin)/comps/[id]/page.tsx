@@ -6,7 +6,6 @@ import {
   getAdminCompById,
   getAdminCompCarries,
   getAdminCompPriority,
-  getAdminCompSituationalBadge,
   getPatches,
 } from "@/server/queries/admin";
 import {
@@ -18,7 +17,6 @@ import { CompForm } from "@/components/admin/comp-form";
 import { CompStatusControls } from "@/components/admin/comp-status-controls";
 import { CompCarriesForm } from "@/components/admin/comp-carries-form";
 import { CompAugmentsForm } from "@/components/admin/comp-augments-form";
-import { CompSituationalBadgeForm } from "@/components/admin/comp-situational-badge-form";
 import { CompPriorityForm } from "@/components/admin/comp-priority-form";
 
 export const metadata: Metadata = {
@@ -44,23 +42,15 @@ export default async function EditCompPage({
 
   if (!comp) notFound();
 
-  const [
-    carries,
-    augmentIds,
-    priority,
-    situationalBadge,
-    champions,
-    items,
-    augments,
-  ] = await Promise.all([
-    getAdminCompCarries(comp.id),
-    getAdminCompAugments(comp.id),
-    getAdminCompPriority(comp.id),
-    getAdminCompSituationalBadge(comp.id),
-    getBuilderChampions(comp.set),
-    getBuilderItems(comp.set),
-    getBuilderAugments(comp.set),
-  ]);
+  const [carries, augmentIds, priority, champions, items, augments] =
+    await Promise.all([
+      getAdminCompCarries(comp.id),
+      getAdminCompAugments(comp.id),
+      getAdminCompPriority(comp.id),
+      getBuilderChampions(comp.set),
+      getBuilderItems(comp.set),
+      getBuilderAugments(comp.set),
+    ]);
 
   const championOptions = champions.map((c) => ({
     id: c.id,
@@ -115,13 +105,6 @@ export default async function EditCompPage({
       />
 
       <CompForm patches={patches} comp={comp} champions={championOptions} />
-
-      <CompSituationalBadgeForm
-        compId={comp.id}
-        augments={augmentOptions}
-        items={itemOptions}
-        initial={situationalBadge}
-      />
 
       <CompCarriesForm
         compId={comp.id}

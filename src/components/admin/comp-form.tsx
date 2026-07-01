@@ -23,13 +23,12 @@ import { slugify } from "@/lib/slug";
  * (US-038), which enforce FR-20 before a comp can go live.
  */
 
-// Situacional (X) is NOT a tier here — it's the `situational` checkbox below,
-// which routes the comp to the Situacional band keeping its S/A/B/C tier badge.
 const TIER_OPTIONS: { value: Tier; label: string }[] = [
   { value: "S", label: "S" },
   { value: "A", label: "A" },
   { value: "B", label: "B" },
   { value: "C", label: "C" },
+  { value: "X", label: "X" },
 ];
 
 const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
@@ -57,7 +56,6 @@ function initialValues(comp?: AdminCompEdit): CompFormInput {
     name: comp?.name ?? "",
     slug: comp?.slug ?? "",
     tier: comp?.tier ?? "A",
-    situational: comp?.situational ?? false,
     playstyle: comp?.playstyle ?? "",
     difficulty: comp?.difficulty ?? "MEDIUM",
     patchIntroducedId: comp?.patchIntroducedId ?? "",
@@ -223,20 +221,6 @@ export function CompForm({ patches, comp, champions }: CompFormProps) {
             className={inputClass}
             placeholder="Ex.: Fast 8, Slow Roll…"
           />
-        </label>
-
-        <label className="flex items-center gap-2 text-sm sm:col-span-2">
-          <input
-            name="situational"
-            type="checkbox"
-            checked={values.situational}
-            onChange={(e) => update("situational", e.target.checked)}
-            className="h-4 w-4 rounded border-input bg-background text-primary focus-visible:ring-2 focus-visible:ring-ring"
-          />
-          <span className="text-muted-foreground">
-            Comp situacional — vai para a faixa Situacional, com o tier acima
-            (S/A/B/C) exibido como badge
-          </span>
         </label>
       </fieldset>
 

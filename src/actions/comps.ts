@@ -39,7 +39,6 @@ export interface CompFormInput {
   /** Desired slug; blank falls back to a slug derived from `name`. */
   slug: string;
   tier: Tier;
-  situational: boolean;
   playstyle: string;
   difficulty: Difficulty;
   patchIntroducedId: string;
@@ -107,7 +106,6 @@ function baseData(input: CompFormInput) {
   return {
     name: input.name.trim(),
     tier: input.tier,
-    situational: input.situational,
     difficulty: input.difficulty,
     playstyle: nullifyBlank(input.playstyle),
     patchIntroducedId: input.patchIntroducedId,
@@ -228,13 +226,7 @@ export async function setCompTier(
   });
   if (!comp) return { ok: false, error: "Comp não encontrada." };
 
-  // The X band is the situational band, not a tier: moving to X sets the
-  // `situational` flag (keeping the comp's S/A/B/C tier for its badge); moving
-  // to S/A/B/C sets that tier and clears `situational`.
-  await db.comp.update({
-    where: { id: compId },
-    data: tier === "X" ? { situational: true } : { tier, situational: false },
-  });
+  await db.comp.update({ where: { id: compId }, data: { tier } });
 
   // A published comp's public pages are ISR-cached; re-bucket it on the live
   // tier list (and refresh its comp page) when its tier changes.
@@ -554,52 +546,6 @@ export async function updateCompAugments(
         data: ids.map((augmentId, i) => ({ compId, augmentId, order: i })),
       });
     }
-  });
-
-  revalidateComp(comp.slug);
-  return { ok: true, id: comp.id, slug: comp.slug };
-}
-
-/** A situational comp's tier-list badge: a single item OR augment (or neither). */
-export interface SituationalBadgeInput {
-  itemId: string | null;
-  augmentId: string | null;
-}
-
-/**
- * Set the situational comp's tier-list badge to one item OR augment icon (at
- * most one is stored). Clearing both removes the badge (the card falls back to
- * the tier-letter badge). Item wins if both arrive.
- */
-export async function updateSituationalBadge(
-  compId: string,
-  input: SituationalBadgeInput,
-): Promise<CompActionResult> {
-  await requireRole("EDITOR");
-
-  const comp = await db.comp.findUnique({
-    where: { id: compId },
-    select: { id: true, slug: true, set: true },
-  });
-  if (!comp) return { ok: false, error: "Comp não encontrada." };
-
-  const itemId = input.itemId || null;
-  const augmentId = itemId ? null : input.augmentId || null;
-
-  if (itemId) {
-    const found = await db.item.count({ where: { id: itemId, set: comp.set } });
-    if (!found) return { ok: false, error: "Item inválido." };
-  }
-  if (augmentId) {
-    const found = await db.augment.count({
-      where: { id: augmentId, set: comp.set },
-    });
-    if (!found) return { ok: false, error: "Augment inválido." };
-  }
-
-  await db.comp.update({
-    where: { id: compId },
-    data: { situationalItemId: itemId, situationalAugmentId: augmentId },
   });
 
   revalidateComp(comp.slug);

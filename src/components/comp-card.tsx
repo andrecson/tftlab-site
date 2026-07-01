@@ -27,14 +27,11 @@ export function CompCard({ comp, currentPatchId }: CompCardProps) {
   // Cover champion chosen for the guide; fall back to the comp's first carry.
   const champion = comp.coverChampion ?? comp.units[0]?.champion ?? null;
   const rim = TIER_META[comp.tier].chipClass;
-  // Situational comps show a chosen item/augment icon; fall back to the tier
-  // letter when the curator hasn't picked one.
-  const situBadge = comp.situationalAugment ?? comp.situationalItem ?? null;
 
   return (
     <Link
       href={`/comps/${comp.slug}`}
-      aria-label={`Ver comp ${comp.name}${comp.situational ? ` (tier ${comp.tier}, situacional)` : ""}`}
+      aria-label={`Ver comp ${comp.name}`}
       title={comp.name}
       className="group relative block shrink-0 rounded-md transition-transform hover:z-10 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
@@ -64,31 +61,6 @@ export function CompCard({ comp, currentPatchId }: CompCardProps) {
           )}
         </span>
       </span>
-
-      {/* Situational comps: a chosen item/augment icon badge, or the tier
-          letter as a fallback when none is picked. */}
-      {comp.situational && situBadge ? (
-        <span
-          className="pointer-events-none absolute -bottom-1 -right-1 z-10 block h-[42%] w-[42%] overflow-hidden rounded-full bg-[#0a1322] ring-2 ring-background"
-          title={situBadge.name}
-        >
-          <Image
-            src={situBadge.iconUrl}
-            alt=""
-            fill
-            sizes="36px"
-            className="object-cover"
-          />
-        </span>
-      ) : null}
-      {comp.situational && !situBadge ? (
-        <span
-          className={`pointer-events-none absolute bottom-0 left-1/2 z-10 -translate-x-1/2 translate-y-1/4 rounded px-1 py-px text-[10px] font-extrabold leading-none text-background ${TIER_META[comp.tier].chipClass}`}
-          aria-hidden="true"
-        >
-          {comp.tier}
-        </span>
-      ) : null}
 
       {/* "Novo" — a crafted cyan pill with a soft brand glow (impeccable pass);
           the "Atualizado" badge was removed from the tier list. */}

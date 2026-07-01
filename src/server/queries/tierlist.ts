@@ -37,9 +37,6 @@ const compCardInclude = Prisma.validator<Prisma.CompInclude>()({
   },
   // Champion whose icon represents the comp on the tier list (US: cover).
   coverChampion: { select: { id: true, name: true, iconUrl: true } },
-  // Situational comps show a chosen item/augment icon as their badge.
-  situationalItem: { select: { iconUrl: true, name: true } },
-  situationalAugment: { select: { iconUrl: true, name: true } },
 });
 
 /** A PUBLISHED comp shaped for the tier-list card (traits + carries). */

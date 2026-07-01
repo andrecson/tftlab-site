@@ -18,7 +18,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 // Tier colors mirror the CSS tier tokens in globals.css (written as hex here
-// because satori can't read CSS variables). X is the situational band.
+// because satori can't read CSS variables).
 const TIER_COLOR: Record<Tier, string> = {
   S: "#EF4343",
   A: "#F97415",
