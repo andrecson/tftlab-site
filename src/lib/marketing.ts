@@ -22,3 +22,51 @@ export const SOCIAL_LINKS = {
  * cai no WhatsApp (contato pra assinar).
  */
 export const CHECKOUT_URL = WHATSAPP_URL;
+
+/** A subscription plan (shared by the Home preview + the /planos page). */
+export interface Plan {
+  id: string;
+  name: string;
+  price: string;
+  period: string;
+  description: string;
+  promoText?: string;
+  features: string[];
+  highlight: boolean;
+}
+
+/** Real plans carried over from the old site (MENSAL R$80/mês, ANUAL R$40/mês). */
+export const PLANS: Plan[] = [
+  {
+    id: "monthly",
+    name: "Mensal",
+    price: "R$80,00",
+    period: "/mês",
+    description: "Para quem quer experimentar a plataforma e evoluir agora.",
+    features: [
+      "Acesso a todas as aulas ao vivo",
+      "Tier lists atualizadas",
+      "Guias avançados exclusivos",
+      "Comunidade no Discord",
+      "Gravações das aulas passadas",
+    ],
+    highlight: false,
+  },
+  {
+    id: "annual",
+    name: "Anual",
+    price: "R$40,00",
+    period: "/mês",
+    description: "Para o estrategista que pensa no longo prazo.",
+    promoText: "Preço promocional de lançamento",
+    features: [
+      "Acesso a todas as aulas ao vivo",
+      "Tier lists atualizadas",
+      "Guias avançados exclusivos",
+      "Comunidade no Discord",
+      "Gravações das aulas passadas",
+      "Sorteios e promoções exclusivas",
+    ],
+    highlight: true,
+  },
+];

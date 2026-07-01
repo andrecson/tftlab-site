@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { BenefitsSection } from "@/components/marketing/benefits-section";
+import { CtaSection } from "@/components/marketing/cta-section";
+import { FaqSection } from "@/components/marketing/faq-section";
 import { Hero } from "@/components/marketing/hero";
+import { MentorsSection } from "@/components/marketing/mentors-section";
+import { PlansPreview } from "@/components/marketing/plans-preview";
+import { TestimonialsSection } from "@/components/marketing/testimonials-section";
 
 /**
  * Landing / home (`/`) — the coaching front door ported from the old
- * tftlab.com.br, now the single site's entry point. The tier list moved to
- * `/tier-list`. More landing sections (benefits, mentors, testimonials, plans
- * preview, FAQ) are being ported in incrementally.
+ * tftlab.com.br, now the single site's entry point (the tier list moved to
+ * `/tier-list`). A tools teaser surfaces the free tier list + builder right
+ * after the hero, then the full coaching landing.
  */
 export const metadata: Metadata = {
   title: "TFTLab — Coaching, tier lists e guias de Teamfight Tactics",
@@ -16,7 +22,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-const EXPLORE = [
+const TOOLS = [
   {
     href: "/tier-list",
     title: "Tier List",
@@ -29,12 +35,6 @@ const EXPLORE = [
     desc: "Monte seu board hexágono a hexágono, defina estrelas e itens, e compartilhe por link.",
     cta: "Abrir builder",
   },
-  {
-    href: "/planos",
-    title: "Coaching",
-    desc: "Aulas semanais com mentores internacionais e acompanhamento para subir de elo.",
-    cta: "Ver planos",
-  },
 ] as const;
 
 export default function HomePage() {
@@ -42,16 +42,16 @@ export default function HomePage() {
     <>
       <Hero />
 
+      {/* Free tools — surfaces the merged tier list + builder up front. */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <h2 className="text-center text-2xl font-extrabold uppercase tracking-tight sm:text-3xl">
-          Explore o <span className="text-primary">Lab</span>
+          Ferramentas <span className="text-primary">grátis</span>
         </h2>
         <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-muted-foreground">
-          Ferramentas grátis pra dominar o meta + coaching pra evoluir de verdade.
+          Domine o meta antes mesmo de assinar — tier list e builder liberados.
         </p>
-
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {EXPLORE.map((item) => (
+        <div className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-2">
+          {TOOLS.map((item) => (
             <Link
               key={item.title}
               href={item.href}
@@ -74,6 +74,13 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      <BenefitsSection />
+      <MentorsSection />
+      <TestimonialsSection />
+      <PlansPreview />
+      <FaqSection />
+      <CtaSection />
     </>
   );
 }
