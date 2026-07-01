@@ -35,6 +35,8 @@ const compCardInclude = Prisma.validator<Prisma.CompInclude>()({
       champion: { select: { id: true, name: true, iconUrl: true, cost: true } },
     },
   },
+  // Champion whose icon represents the comp on the tier list (US: cover).
+  coverChampion: { select: { id: true, name: true, iconUrl: true } },
 });
 
 /** A PUBLISHED comp shaped for the tier-list card (traits + carries). */

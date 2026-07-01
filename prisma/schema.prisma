@@ -34,8 +34,9 @@ model Champion {
   cost      Int
   iconUrl   String
   set       String
-  traits    ChampionTrait[]
-  compUnits CompUnit[]
+  traits        ChampionTrait[]
+  compUnits     CompUnit[]
+  coverForComps Comp[]          @relation("CompCover")
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
@@ -188,6 +189,8 @@ model Comp {
   patchUpdated      Patch?             @relation("PatchUpdated", fields: [patchUpdatedId], references: [id])
   traits            CompTrait[]
   units             CompUnit[]
+  coverChampionId   String?
+  coverChampion     Champion?          @relation("CompCover", fields: [coverChampionId], references: [id])
   itemPriority      CompItemPriority[]
   augments          CompAugment[]
   tierSnapshots     CompTierSnapshot[]

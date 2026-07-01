@@ -48,6 +48,8 @@ export interface CompFormInput {
   midGame: string;
   lateGame: string;
   tips: string;
+  /** Champion whose icon represents the comp on the tier list (null = none). */
+  coverChampionId: string | null;
 }
 
 /** Result of a create/update action — a discriminated union for the client. */
@@ -114,6 +116,7 @@ function baseData(input: CompFormInput) {
     midGame: nullifyBlank(input.midGame),
     lateGame: nullifyBlank(input.lateGame),
     tips: nullifyBlank(input.tips),
+    coverChampionId: input.coverChampionId || null,
   };
 }
 

@@ -176,6 +176,7 @@ const adminCompEditSelect = Prisma.validator<Prisma.CompSelect>()({
   tips: true,
   patchIntroducedId: true,
   patchUpdatedId: true,
+  coverChampionId: true,
 });
 
 /** A comp's editable base fields (US-034 form). */

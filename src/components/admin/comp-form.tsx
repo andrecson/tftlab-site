@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import type { Tier, Difficulty } from "@prisma/client";
 import { createComp, updateComp, type CompFormInput } from "@/actions/comps";
 import type { AdminCompEdit, PatchOption } from "@/server/queries/admin";
+import {
+  CatalogPicker,
+  type CatalogOption,
+} from "@/components/admin/catalog-picker";
 import { slugify } from "@/lib/slug";
 
 /**
@@ -42,6 +46,8 @@ interface CompFormProps {
   patches: PatchOption[];
   /** Present in edit mode; omitted when creating. */
   comp?: AdminCompEdit;
+  /** Champion catalog for the cover picker (shown in edit mode). */
+  champions?: CatalogOption[];
 }
 
 /** Build the initial controlled values (nulls → "" for the inputs). */
@@ -60,10 +66,11 @@ function initialValues(comp?: AdminCompEdit): CompFormInput {
     midGame: comp?.midGame ?? "",
     lateGame: comp?.lateGame ?? "",
     tips: comp?.tips ?? "",
+    coverChampionId: comp?.coverChampionId ?? null,
   };
 }
 
-export function CompForm({ patches, comp }: CompFormProps) {
+export function CompForm({ patches, comp, champions }: CompFormProps) {
   const router = useRouter();
   const isEdit = Boolean(comp);
 
@@ -153,6 +160,18 @@ export function CompForm({ patches, comp }: CompFormProps) {
             URL pública: /comps/{previewSlug}
           </span>
         </label>
+
+        {champions ? (
+          <CatalogPicker
+            label="Campeão-capa (tier list)"
+            hint="Imagem que representa esta comp na tier list."
+            options={champions}
+            value={values.coverChampionId}
+            onChange={(value) => update("coverChampionId", value)}
+            placeholder="Buscar campeão…"
+            emptyLabel="Nenhum campeão encontrado."
+          />
+        ) : null}
       </fieldset>
 
       {/* Classification */}

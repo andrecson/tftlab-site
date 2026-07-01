@@ -84,7 +84,16 @@ export default async function EditCompPage({
         comp={{ id: comp.id, slug: comp.slug, status: comp.status }}
       />
 
-      <CompForm patches={patches} comp={comp} />
+      <CompForm
+        patches={patches}
+        comp={comp}
+        champions={champions.map((c) => ({
+          id: c.id,
+          name: c.name,
+          iconUrl: c.iconUrl,
+          meta: `Custo ${c.cost}`,
+        }))}
+      />
 
       <CompCompositionForm
         compId={comp.id}

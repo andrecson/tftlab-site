@@ -6,17 +6,17 @@ import type { CompCard as CompCardData } from "@/server/queries/tierlist";
 import { getCompBadges } from "@/server/services/badges";
 
 /**
- * CompCard (US-015).
+ * CompCard (US-015, revised).
  *
- * The scannable card shown in each tier-list band: comp name, its main trait
- * icons (with active level) and its carry champions, on a muted background with
- * a tier-colored left border. Derives the Novo/Atualizado badges from the
- * badges service. The whole card is a link to `/comps/[slug]` with an
- * accessible name, so it is reachable and openable by keyboard.
+ * In the tier list a comp is shown ONLY as a champion icon — the "cover"
+ * champion chosen when writing the guide (falls back to the comp's first carry).
+ * No name or synergies are rendered on the card; the comp name is still exposed
+ * via `aria-label`/`title` for accessibility. The whole tile links to
+ * `/comps/[slug]` and carries the tier-colored left border plus the
+ * Novo/Atualizado badges from the badges service.
  *
  * Tier border classes are written out in full (never interpolated) so
- * Tailwind's content scanner keeps `border-l-tier-*` in the build — same rule
- * as the tier-list page.
+ * Tailwind's content scanner keeps `border-l-tier-*` in the build.
  */
 const TIER_BORDER: Record<Tier, string> = {
   S: "border-l-tier-s",
@@ -34,73 +34,45 @@ interface CompCardProps {
 
 export function CompCard({ comp, currentPatchId }: CompCardProps) {
   const { isNew, isUpdated } = getCompBadges(comp, currentPatchId);
+  // Cover champion chosen for the guide; fall back to the comp's first carry.
+  const champion = comp.coverChampion ?? comp.units[0]?.champion ?? null;
 
   return (
     <Link
       href={`/comps/${comp.slug}`}
       aria-label={`Ver comp ${comp.name}`}
-      className={`group flex w-full flex-col gap-3 rounded-lg border border-l-4 border-border bg-muted/40 p-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${TIER_BORDER[comp.tier]} sm:w-72`}
+      title={comp.name}
+      className={`group relative block shrink-0 overflow-hidden rounded-lg border border-l-4 border-border bg-muted/40 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${TIER_BORDER[comp.tier]}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold leading-tight text-foreground transition-colors group-hover:text-primary">
-          {comp.name}
-        </h3>
-        {(isNew || isUpdated) && (
-          <div className="flex shrink-0 gap-1">
-            {isNew && (
-              <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-primary-foreground">
-                Novo
-              </span>
-            )}
-            {isUpdated && (
-              <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-secondary-foreground">
-                Atualizado
-              </span>
-            )}
-          </div>
+      <span className="relative block h-20 w-20 sm:h-24 sm:w-24">
+        {champion ? (
+          <Image
+            src={champion.iconUrl}
+            alt={comp.name}
+            fill
+            sizes="96px"
+            className="object-cover"
+          />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center text-2xl text-muted-foreground">
+            ?
+          </span>
         )}
-      </div>
+      </span>
 
-      {comp.units.length > 0 && (
-        <ul className="flex flex-wrap items-start gap-2">
-          {comp.units.map((unit) => (
-            <li key={unit.id} className="flex w-12 flex-col items-center gap-1">
-              <span className="relative block h-10 w-10 overflow-hidden rounded-md ring-1 ring-border">
-                <Image
-                  src={unit.champion.iconUrl}
-                  alt=""
-                  fill
-                  sizes="40px"
-                  className="object-cover"
-                />
-              </span>
-              <span className="w-full truncate text-center text-[10px] leading-tight text-muted-foreground">
-                {unit.champion.name}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {comp.traits.length > 0 && (
-        <ul className="flex flex-wrap items-center gap-1.5">
-          {comp.traits.map((compTrait) => (
-            <li
-              key={compTrait.id}
-              className="inline-flex items-center gap-1 rounded bg-background/60 px-1.5 py-0.5 text-[11px] text-muted-foreground"
-              title={`${compTrait.trait.name} ${compTrait.level}`}
-            >
-              <Image
-                src={compTrait.trait.iconUrl}
-                alt={compTrait.trait.name}
-                width={14}
-                height={14}
-                className="h-3.5 w-3.5"
-              />
-              <span className="font-medium tabular-nums">{compTrait.level}</span>
-            </li>
-          ))}
-        </ul>
+      {(isNew || isUpdated) && (
+        <div className="pointer-events-none absolute left-0 top-0 flex flex-col items-start gap-0.5 p-1">
+          {isNew && (
+            <span className="rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-primary-foreground">
+              Novo
+            </span>
+          )}
+          {isUpdated && (
+            <span className="rounded bg-secondary px-1 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-secondary-foreground">
+              Atu
+            </span>
+          )}
+        </div>
       )}
     </Link>
   );
