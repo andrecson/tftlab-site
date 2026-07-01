@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { SectionHeading } from "@/components/section-heading";
 import type { CompDetail } from "@/server/queries/comp";
 
 /**
@@ -114,12 +115,9 @@ export function CompGuide({ comp }: { comp: CompDetail }) {
           aria-labelledby="when-to-play-heading"
           className="flex flex-col gap-3"
         >
-          <h2
-            id="when-to-play-heading"
-            className="text-lg font-semibold text-foreground"
-          >
+          <SectionHeading id="when-to-play-heading">
             Quando jogar
-          </h2>
+          </SectionHeading>
           <GuideText text={whenToPlay} names={names} />
         </section>
       )}
@@ -129,12 +127,7 @@ export function CompGuide({ comp }: { comp: CompDetail }) {
           aria-labelledby="how-to-play-heading"
           className="flex flex-col gap-4"
         >
-          <h2
-            id="how-to-play-heading"
-            className="text-lg font-semibold text-foreground"
-          >
-            Como jogar
-          </h2>
+          <SectionHeading id="how-to-play-heading">Como jogar</SectionHeading>
           <div className="flex flex-col gap-5">
             {phases.map((phase) => (
               <div key={phase.key} className="flex flex-col gap-2">
@@ -150,9 +143,7 @@ export function CompGuide({ comp }: { comp: CompDetail }) {
 
       {tips && (
         <section aria-labelledby="tips-heading" className="flex flex-col gap-3">
-          <h2 id="tips-heading" className="text-lg font-semibold text-foreground">
-            Dicas
-          </h2>
+          <SectionHeading id="tips-heading">Dicas</SectionHeading>
           <div className="rounded-lg border border-border bg-muted/40 p-4">
             <GuideText text={tips} names={names} />
           </div>

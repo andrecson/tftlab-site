@@ -1,4 +1,5 @@
 import { IconTooltip } from "@/components/icon-tooltip";
+import { SectionHeading } from "@/components/section-heading";
 import type { CompDetail } from "@/server/queries/comp";
 
 /**
@@ -20,9 +21,7 @@ export function CompCarries({
 
   return (
     <section aria-labelledby="carries-heading" className="flex flex-col gap-4">
-      <h2 id="carries-heading" className="text-lg font-semibold text-foreground">
-        Carries
-      </h2>
+      <SectionHeading id="carries-heading">Carries</SectionHeading>
       <ul className="flex flex-col gap-3">
         {carries.map((carry) => (
           <li
@@ -103,12 +102,9 @@ export function CompItemPriority({
       aria-labelledby="item-priority-heading"
       className="flex flex-col gap-4"
     >
-      <h2
-        id="item-priority-heading"
-        className="text-lg font-semibold text-foreground"
-      >
+      <SectionHeading id="item-priority-heading">
         Prioridade de itens
-      </h2>
+      </SectionHeading>
       <ol className="flex flex-wrap items-center gap-x-2 gap-y-3">
         {items.map((entry, index) => (
           <li key={entry.id} className="flex items-center gap-2">

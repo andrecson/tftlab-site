@@ -1,4 +1,5 @@
 import { IconTooltip } from "@/components/icon-tooltip";
+import { SectionHeading } from "@/components/section-heading";
 import type { CompDetail } from "@/server/queries/comp";
 
 /**
@@ -49,9 +50,7 @@ export function CompAugments({
 
   return (
     <section aria-labelledby="augments-heading" className="flex flex-col gap-4">
-      <h2 id="augments-heading" className="text-lg font-semibold text-foreground">
-        Augments
-      </h2>
+      <SectionHeading id="augments-heading">Augments</SectionHeading>
 
       {augmentPriority.length > 0 && (
         <div className="flex flex-col gap-1.5">

@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { BOARD_COLS, BOARD_ROWS, BUILDER_HEX_CLIP } from "@/lib/builder";
 import type { CompDetail } from "@/server/queries/comp";
+import { SectionHeading } from "@/components/section-heading";
 
 /**
  * Board positioning of a comp-detail page (US-020), styled to match the builder
@@ -105,9 +106,7 @@ export function CompBoard({
   return (
     <section aria-labelledby="board-heading" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="board-heading" className="text-lg font-semibold text-foreground">
-          Posicionamento
-        </h2>
+        <SectionHeading id="board-heading">Posicionamento</SectionHeading>
         <button
           type="button"
           onClick={() => setShowNames((value) => !value)}

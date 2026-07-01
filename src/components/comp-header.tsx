@@ -36,15 +36,27 @@ export function CompHeader({ comp, currentPatchId }: CompHeaderProps) {
   return (
     <header className="flex flex-col gap-5">
       <div className="flex items-center gap-4">
-        <span
-          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-lg text-2xl font-extrabold text-background ${tierMeta.chipClass}`}
+        <div
+          className={`relative flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-lg text-background ${tierMeta.chipClass}`}
           aria-label={`Tier ${comp.tier}`}
         >
-          {comp.tier}
-        </span>
+          <span className="pointer-events-none absolute left-1.5 top-1.5 h-2.5 w-2.5 border-l-2 border-t-2 border-background/50" />
+          <span className="pointer-events-none absolute right-1.5 top-1.5 h-2.5 w-2.5 border-r-2 border-t-2 border-background/50" />
+          <span className="pointer-events-none absolute bottom-1.5 left-1.5 h-2.5 w-2.5 border-b-2 border-l-2 border-background/50" />
+          <span className="pointer-events-none absolute bottom-1.5 right-1.5 h-2.5 w-2.5 border-b-2 border-r-2 border-background/50" />
+          <span
+            className="text-3xl font-extrabold leading-none"
+            aria-hidden="true"
+          >
+            {comp.tier}
+          </span>
+          <span className="mt-0.5 text-[8px] font-bold uppercase tracking-widest">
+            {tierMeta.badgeSub}
+          </span>
+        </div>
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
               {comp.name}
             </h1>
             {isNew && (
