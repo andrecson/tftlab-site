@@ -107,8 +107,8 @@ export const TIER_META: Record<Tier, TierMeta> = {
     containerClass: "border-tier-c",
   },
   X: {
-    label: "Situacional",
-    badgeSub: "SITUAC.",
+    label: "X Tier",
+    badgeSub: "TIER",
     chipClass: "bg-tier-x",
     borderClass: "border-l-tier-x",
     containerClass: "border-tier-x",

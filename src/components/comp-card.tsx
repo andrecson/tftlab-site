@@ -14,7 +14,7 @@ import { getCompBadges } from "@/server/services/badges";
  * tier-colored rim (same pointy-top hex as the builder/guide board, for a
  * consistent look). No name/synergies are drawn; the name stays in
  * `aria-label`/`title`. The tile links to `/comps/[slug]` and overlays the
- * Novo/Atualizado badge.
+ * "Novo" badge (the "Atualizado" badge is not shown on the tier list).
  */
 interface CompCardProps {
   comp: CompCardData;
@@ -23,10 +23,13 @@ interface CompCardProps {
 }
 
 export function CompCard({ comp, currentPatchId }: CompCardProps) {
-  const { isNew, isUpdated } = getCompBadges(comp, currentPatchId);
+  const { isNew } = getCompBadges(comp, currentPatchId);
   // Cover champion chosen for the guide; fall back to the comp's first carry.
   const champion = comp.coverChampion ?? comp.units[0]?.champion ?? null;
   const rim = TIER_META[comp.tier].chipClass;
+  // Situational comps show a chosen item/augment icon; fall back to the tier
+  // letter when the curator hasn't picked one.
+  const situBadge = comp.situationalAugment ?? comp.situationalItem ?? null;
 
   return (
     <Link
@@ -62,20 +65,36 @@ export function CompCard({ comp, currentPatchId }: CompCardProps) {
         </span>
       </span>
 
-      {/* Situational comps sit in the X band; this badge shows the marked
-          S/A/B/C tier so the card stays legible outside its own band. */}
-      {comp.situational && (
+      {/* Situational comps: a chosen item/augment icon badge, or the tier
+          letter as a fallback when none is picked. */}
+      {comp.situational && situBadge ? (
+        <span
+          className="pointer-events-none absolute -bottom-1 -right-1 z-10 block h-[42%] w-[42%] overflow-hidden rounded-full bg-[#0a1322] ring-2 ring-background"
+          title={situBadge.name}
+        >
+          <Image
+            src={situBadge.iconUrl}
+            alt=""
+            fill
+            sizes="36px"
+            className="object-cover"
+          />
+        </span>
+      ) : null}
+      {comp.situational && !situBadge ? (
         <span
           className={`pointer-events-none absolute bottom-0 left-1/2 z-10 -translate-x-1/2 translate-y-1/4 rounded px-1 py-px text-[10px] font-extrabold leading-none text-background ${TIER_META[comp.tier].chipClass}`}
           aria-hidden="true"
         >
           {comp.tier}
         </span>
-      )}
+      ) : null}
 
-      {(isNew || isUpdated) && (
-        <span className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/3 rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-primary-foreground">
-          {isNew ? "Novo" : "Atu"}
+      {/* "Novo" — a crafted cyan pill with a soft brand glow (impeccable pass);
+          the "Atualizado" badge was removed from the tier list. */}
+      {isNew && (
+        <span className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wider text-primary-foreground shadow-[0_0_8px_hsl(var(--primary)/0.6)] ring-1 ring-primary/40">
+          Novo
         </span>
       )}
     </Link>
