@@ -29,14 +29,14 @@ export function TierBands({ groups, currentPatchId }: TierBandsProps) {
             {/* Tier badge — big colored square with the letter + corner brackets
                 (tftacademy-style), in the TFTLab tier colors. */}
             <div
-              className={`relative flex w-16 min-h-[4rem] shrink-0 flex-col items-center justify-center rounded-lg text-background ${meta.chipClass} sm:w-[4.75rem]`}
+              className={`relative flex min-h-[4.25rem] w-[4.25rem] shrink-0 flex-col items-center justify-center rounded-lg text-background ${meta.chipClass} sm:w-[5.25rem]`}
             >
               <span className="pointer-events-none absolute left-1.5 top-1.5 h-2.5 w-2.5 border-l-2 border-t-2 border-background/50" />
               <span className="pointer-events-none absolute right-1.5 top-1.5 h-2.5 w-2.5 border-r-2 border-t-2 border-background/50" />
               <span className="pointer-events-none absolute bottom-1.5 left-1.5 h-2.5 w-2.5 border-b-2 border-l-2 border-background/50" />
               <span className="pointer-events-none absolute bottom-1.5 right-1.5 h-2.5 w-2.5 border-b-2 border-r-2 border-background/50" />
               <span
-                className="text-3xl font-extrabold leading-none sm:text-4xl"
+                className="text-4xl font-extrabold leading-none sm:text-5xl"
                 aria-hidden="true"
               >
                 {tier}
@@ -48,7 +48,7 @@ export function TierBands({ groups, currentPatchId }: TierBandsProps) {
 
             {/* Comps container — tier-colored border holding the hexagons. */}
             <div
-              className={`flex flex-1 items-center rounded-xl border bg-card px-3 py-2.5 ${meta.containerClass}`}
+              className={`flex flex-1 items-center rounded-xl border-2 bg-card px-3 py-2.5 ${meta.containerClass}`}
             >
               {comps.length === 0 ? (
                 <p className="px-1 text-sm text-muted-foreground">

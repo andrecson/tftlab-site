@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { Builder } from "@/components/builder/builder";
+import { PageHeading } from "@/components/page-heading";
 import { getBuilderCatalog } from "@/server/queries/builder-catalog";
 
 /**
@@ -27,14 +28,10 @@ export default async function BuilderPage() {
 
   return (
     <div className="mx-auto max-w-[88rem] px-4 py-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Builder
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Posicione campeões no tabuleiro para montar e experimentar composições.
-        </p>
-      </header>
+      <PageHeading
+        title="Builder"
+        subtitle="Monte e experimente composições no tabuleiro."
+      />
 
       <Builder
         champions={champions}

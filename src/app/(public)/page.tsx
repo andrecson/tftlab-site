@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 
+import { PageHeading } from "@/components/page-heading";
 import { TierBands } from "@/components/tier-bands";
 import { groupByTier } from "@/lib/tiers";
 import { getSiteConfig } from "@/server/queries/config";
@@ -47,14 +48,10 @@ export default async function TierListPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Tier List
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          As melhores composições de TFT no patch atual, agrupadas por força.
-        </p>
-      </header>
+      <PageHeading
+        title="Tier List"
+        subtitle="As comps mais fortes do patch — ranqueadas por força."
+      />
 
       <TierBands groups={groupByTier(comps)} currentPatchId={currentPatchId} />
     </div>
