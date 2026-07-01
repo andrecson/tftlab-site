@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { ErrorMonitor } from "@/components/error-monitor";
@@ -8,6 +9,18 @@ import {
   SITE_NAME,
   SITE_URL,
 } from "@/lib/site";
+
+/**
+ * Body/UI type: Inter — a fuller, device-consistent sans that reads like the SF
+ * Pro / system UI look tftlab.com.br shows on Apple devices (the site itself uses
+ * the OS `ui-sans-serif`, which renders thinner on some platforms). Exposed as a
+ * CSS variable consumed by Tailwind's `font-sans`.
+ */
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 /**
  * Root metadata (US-023). `metadataBase` makes every relative canonical/OG URL
@@ -45,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={inter.variable}>
       <body>
         {children}
         <AnalyticsProvider />
