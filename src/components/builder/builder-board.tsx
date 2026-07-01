@@ -5,9 +5,9 @@ import Image from "next/image";
 import {
   BOARD_COLS,
   BOARD_ROWS,
+  BUILDER_HEX_CLIP,
   CHAMPION_DND_PREFIX,
   clampStars,
-  HEX_CLIP,
   hexKey,
   ITEM_DND_PREFIX,
   UNIT_DND_PREFIX,
@@ -71,17 +71,31 @@ function Hex({
   onDropItem,
 }: HexProps) {
   const stars = unit ? clampStars(unit.stars) : 1;
+  const carry = unit?.isCarry ?? false;
   const label = champion
-    ? `${champion.name}, ${stars} estrela${stars > 1 ? "s" : ""} — linha ${row + 1}, coluna ${col + 1}`
+    ? `${champion.name}, ${stars} estrela${stars > 1 ? "s" : ""}${carry ? ", carry" : ""} — linha ${row + 1}, coluna ${col + 1}`
     : `Hex vazio linha ${row + 1}, coluna ${col + 1}`;
 
-  const ringClass = selected
-    ? "bg-brand-gradient"
+  // Outer hex "rim" (the frame). A lighter, top-lit gradient framing the darker
+  // inner well — the two tones + the inter-column gap give each hex a crisp,
+  // well-defined edge (US-044). Full class strings so Tailwind keeps them.
+  const rimClass = selected
+    ? "bg-gradient-to-b from-[#8af2e8] via-primary to-[#0e7490]"
     : unit
-      ? "bg-slate-600"
+      ? carry
+        ? "bg-gradient-to-b from-amber-300 to-amber-600"
+        : "bg-gradient-to-b from-slate-400/85 to-slate-600/75"
       : armed
-        ? "bg-primary/40"
-        : "bg-muted/30";
+        ? "bg-gradient-to-b from-primary/70 to-primary/30"
+        : "bg-gradient-to-b from-slate-600/70 to-slate-800/60";
+
+  // A soft glow that hugs the hex silhouette (drop-shadow respects clip-path)
+  // to make the selected/carry states pop without a clipped-away ring.
+  const glow = selected
+    ? "drop-shadow(0 0 4px rgba(94,234,212,0.85))"
+    : carry
+      ? "drop-shadow(0 0 3px rgba(251,191,36,0.65))"
+      : undefined;
 
   return (
     <div className="relative aspect-square w-[13.333%] shrink-0">
@@ -114,17 +128,28 @@ function Hex({
           );
           event.dataTransfer.effectAllowed = "move";
         }}
-        className="absolute inset-0 focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
+        className="group/hex absolute inset-0 focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
+        style={glow ? { filter: glow } : undefined}
       >
-        {/* Ring / tile background (clipped to the hex). */}
+        {/* Outer rim / frame (clipped to the hex). */}
         <span
-          className={`absolute inset-[2px] ${ringClass}`}
-          style={{ clipPath: HEX_CLIP }}
+          className={`absolute inset-0 ${rimClass}`}
+          style={{ clipPath: BUILDER_HEX_CLIP }}
+        />
+        {/* Inner well — the dark seat that frames the champion, or the empty
+            hex. Brightens on hover for empty, non-armed hexes as a drop hint. */}
+        <span
+          className={`absolute inset-[7.5%] bg-[#0a0e18] ${
+            unit || armed
+              ? ""
+              : "transition-colors group-hover/hex:bg-[#141c2b]"
+          }`}
+          style={{ clipPath: BUILDER_HEX_CLIP }}
         />
         {champion ? (
           <span
-            className={`absolute overflow-hidden ${selected ? "inset-[4px]" : "inset-[3px]"}`}
-            style={{ clipPath: HEX_CLIP }}
+            className="absolute inset-[7.5%] overflow-hidden"
+            style={{ clipPath: BUILDER_HEX_CLIP }}
           >
             <Image
               src={champion.iconUrl}
@@ -137,18 +162,27 @@ function Hex({
         ) : null}
         {champion ? (
           <span
-            className="pointer-events-none absolute inset-x-0 top-[6%] text-center text-[9px] leading-none text-amber-300 [text-shadow:0_1px_1px_rgb(0_0_0)]"
+            className="pointer-events-none absolute inset-x-0 top-[7%] text-center text-[9px] font-semibold leading-none text-amber-300 [text-shadow:0_1px_1px_rgb(0_0_0)]"
             aria-hidden="true"
           >
             {"★".repeat(stars)}
           </span>
         ) : null}
+        {carry ? (
+          <span
+            className="pointer-events-none absolute right-[13%] top-[16%] z-10 flex h-[24%] min-h-[10px] w-[24%] min-w-[10px] items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold leading-none text-black ring-1 ring-black/60"
+            aria-hidden="true"
+            title="Carry"
+          >
+            C
+          </span>
+        ) : null}
         {champion && items.length > 0 ? (
-          <span className="pointer-events-none absolute inset-x-0 bottom-[16%] flex items-end justify-center gap-[3%] px-[6%]">
+          <span className="pointer-events-none absolute inset-x-0 bottom-[19%] flex items-end justify-center gap-[5%] px-[13%]">
             {items.map((item, index) => (
               <span
                 key={`${item.id}-${index}`}
-                className="relative block aspect-square w-[24%] overflow-hidden rounded-[2px] ring-1 ring-black/70"
+                className="relative block aspect-square w-[22%] overflow-hidden rounded-[2px] ring-1 ring-black/70"
               >
                 <Image
                   src={item.iconUrl}
@@ -162,7 +196,7 @@ function Hex({
           </span>
         ) : null}
         {champion && showName ? (
-          <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate px-0.5 text-center text-[8px] font-semibold leading-tight text-foreground [text-shadow:0_1px_2px_rgb(0_0_0)]">
+          <span className="pointer-events-none absolute inset-x-[6%] bottom-[10%] truncate rounded-sm bg-black/60 px-0.5 text-center text-[8px] font-semibold leading-tight text-foreground">
             {champion.name}
           </span>
         ) : null}
@@ -186,7 +220,7 @@ export function BuilderBoard({
   const byHex = unitsByHex(units);
 
   return (
-    <div className="mx-auto w-full max-w-xl rounded-lg border border-border bg-card/40 p-2 sm:p-3">
+    <div className="mx-auto w-full max-w-xl rounded-xl border border-border/70 bg-gradient-to-b from-[#0c1220] to-[#070b14] p-3 shadow-inner sm:p-4">
       <div className="flex flex-col">
         {Array.from({ length: BOARD_ROWS }, (_, row) => (
           <div

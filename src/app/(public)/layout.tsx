@@ -22,7 +22,13 @@ export default async function PublicLayout({
         patchVersion={config?.currentPatch?.version ?? null}
         updatedAt={config?.updatedAt ?? null}
       />
-      <main className="flex-1">{children}</main>
+      {/* overflow-x-clip: catalog icons use an absolutely-positioned CSS
+          tooltip (IconTooltip) centered over the icon; near the right edge that
+          (invisible) tooltip would poke past the viewport and add phantom
+          horizontal scroll (US-042). `clip` on the X axis contains it WITHOUT
+          forcing a scroll container (so the sticky header + upward tooltips
+          still work), keeping every public page free of horizontal scroll. */}
+      <main className="flex-1 overflow-x-clip">{children}</main>
       <SiteFooter />
     </div>
   );

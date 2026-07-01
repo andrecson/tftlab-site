@@ -4,38 +4,21 @@ import type { TierGroup } from "@/lib/tiers";
 import type { CompCard as CompCardData } from "@/server/queries/tierlist";
 
 /**
- * TierBands (US-016) — the S/A/B/C/X band list, extracted from the tier-list
- * page so it can be rendered both server-side (the Suspense fallback / default
- * view) and inside the client `TierListFilters` component.
+ * TierBands — the S/A/B/C/X band list rendered on the tier-list page.
  *
- * This is a presentational, prop-driven component (no `"use client"`): it only
- * renders markup + `CompCard`, both of which are client-safe, so it works in
- * either tree.
- *
- * - `hideEmpty` = false (default): every band renders, empty ones showing the
- *   US-014 per-band empty state. This is the default, unfiltered view.
- * - `hideEmpty` = true: only bands with matching comps render. Used while
- *   filters are active — the caller shows a single "no results" state when the
- *   whole filtered set is empty.
+ * Presentational, prop-driven component (no `"use client"`): it only renders
+ * markup + `CompCard`. Every band renders, empty ones showing the US-014
+ * per-band empty state.
  */
 interface TierBandsProps {
   groups: TierGroup<CompCardData>[];
   currentPatchId: string | null;
-  hideEmpty?: boolean;
 }
 
-export function TierBands({
-  groups,
-  currentPatchId,
-  hideEmpty = false,
-}: TierBandsProps) {
-  const visible = hideEmpty
-    ? groups.filter((group) => group.comps.length > 0)
-    : groups;
-
+export function TierBands({ groups, currentPatchId }: TierBandsProps) {
   return (
     <div className="flex flex-col gap-4">
-      {visible.map(({ tier, comps }) => {
+      {groups.map(({ tier, comps }) => {
         const meta = TIER_META[tier];
         return (
           <section

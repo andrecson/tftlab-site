@@ -11,7 +11,7 @@ import { Prisma } from "@prisma/client";
 
 import { db } from "@/server/db";
 
-const compDetailInclude = Prisma.validator<Prisma.CompInclude>()({
+export const compDetailInclude = Prisma.validator<Prisma.CompInclude>()({
   patchIntroduced: true,
   patchUpdated: true,
   traits: {

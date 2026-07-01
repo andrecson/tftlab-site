@@ -22,6 +22,7 @@ const unit = (
   col,
   stars,
   items: [],
+  isCarry: false,
 });
 
 test("clampStars keeps 1–3 and rounds/floors out-of-range values", () => {

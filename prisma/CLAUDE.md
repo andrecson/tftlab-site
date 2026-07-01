@@ -18,3 +18,11 @@
 - **Idempotency without upsert**: comps have no natural key besides `slug`, so each is `db.comp.deleteMany({ where: { slug } })` (cascades all children) then a single nested `db.comp.create`. Slugs are deduped within a run (`uniqueSlug`). Re-seeding yields identical comps (verified: 3 comps, same slugs, no drift).
 - **Badges depend on patch wiring** (matches US-011 logic): a comp introduced in the current patch ⇒ "Novo"; a comp introduced in the previous patch but `patchUpdated` = current ⇒ "Atualizado". The seed always creates one of each plus one with neither, so the public UI / badge service has data to exercise both states.
 - `releasedAt`/`publishedAt` use fixed ISO dates (`2026-06-01` / `2026-06-15`) so re-seeds are stable — don't use `new Date()` (now) for seed timestamps.
+
+## Seed conventions (admin user, US-030)
+- `main()` also runs `seedAdminUser()` (after catalog + sample data): upserts one ADMIN `User` keyed on the unique `email`, storing a **bcryptjs** hash of `ADMIN_PASSWORD`. Credentials come from `ADMIN_EMAIL` / `ADMIN_PASSWORD` env (defaults `admin@metacomps.gg` / `admin1234` for local dev only). Idempotent — re-seeding just re-hashes/updates the same row.
+- The admin login (Auth.js Credentials provider, see `src/auth.ts`) authenticates against this row, so the DB must be seeded before `/admin/login` works. To (re)create ONLY the admin without re-fetching the whole catalog, run a throwaway repo-root tsx script that does the same `db.user.upsert` (then `rm` it).
+
+## Seed conventions (curator user, US-045)
+- `main()` also runs `seedCuratorUser()` AFTER `seedAdminUser()` — a **separate** fn that must NEVER remove/alter the ADMIN. It upserts a role **EDITOR** `User` keyed on the unique `email` column, storing a **bcryptjs** hash. The identifier can be a plain username (default `tftlab`, stored **lowercased** in the `email` column) with password `tftlab`; both overridable via `CURATOR_EMAIL` / `CURATOR_PASSWORD`. Idempotent (upsert on email).
+- The login provider (`src/auth.ts`) normalizes the posted identifier to trim+lowercase before `findUnique({ where: { email } })`, so ANY seeded identifier MUST be lowercased or login won't match. EDITOR already has full panel access (`requireRole` default = EDITOR), so this login needs no permission changes.

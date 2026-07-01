@@ -14,6 +14,17 @@ export const BOARD_COLS = 7;
 /** Pointy-top hexagon clip-path — offset + overlapped cells form a honeycomb. */
 export const HEX_CLIP = "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)";
 
+/**
+ * Refined pointy-top hexagon for the builder board (US-044). Same vertical
+ * geometry as `HEX_CLIP` (peaks at 0/100%, shoulders at 25/75%) so the 4×7
+ * honeycomb tiling (`marginTop:-2.5%` + half-hex row offset) is unchanged, but
+ * the 5%/95% horizontal insets leave a clean gap between adjacent columns so each
+ * hex reads as a distinct, well-defined tile (tftacademy-style) instead of a
+ * seam-to-seam block. Builder-only — the comp-detail board keeps `HEX_CLIP`.
+ */
+export const BUILDER_HEX_CLIP =
+  "polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%)";
+
 /** Star levels a placed unit can have (US-026). */
 export const MIN_STARS = 1;
 export const MAX_STARS = 3;
@@ -25,9 +36,13 @@ export const MAX_AUGMENTS = 3;
 /**
  * A champion placed on a builder hex. `id` is a stable local identity for React
  * keys and per-unit items; it survives moves and undo/redo. The board never
- * persists server-side, so ids are ephemeral client values. `stars` is the
- * unit's 1–3 star level (US-026), defaulting to 1 when the unit is placed.
- * `items` holds up to `MAX_ITEMS` equipped item ids in slot order (US-027).
+ * persists server-side (in the public builder), so ids are ephemeral client
+ * values. `stars` is the unit's 1–3 star level (US-026), defaulting to 1 when the
+ * unit is placed. `items` holds up to `MAX_ITEMS` equipped item ids in slot order
+ * (US-027). `isCarry` marks the unit as a carry (defaults to false when placed);
+ * it is only surfaced/edited in the admin builder (US-037) — the public builder
+ * and the share code never expose it — but it lives on the shared model so the
+ * admin can persist it to `CompUnit.isCarry`.
  */
 export interface PlacedUnit {
   id: string;
@@ -36,6 +51,7 @@ export interface PlacedUnit {
   col: number;
   stars: number;
   items: string[];
+  isCarry: boolean;
 }
 
 /**

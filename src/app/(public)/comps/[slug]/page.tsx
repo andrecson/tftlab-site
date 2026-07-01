@@ -8,6 +8,9 @@ import { CompCarries, CompItemPriority } from "@/components/comp-carries";
 import { CompGuide } from "@/components/comp-guide";
 import { CompHeader } from "@/components/comp-header";
 import { CompUnits } from "@/components/comp-units";
+import { OpenInBuilder } from "@/components/open-in-builder";
+import { TrackEvent } from "@/components/analytics/track-event";
+import { ANALYTICS_EVENTS } from "@/lib/analytics";
 import { TIER_META } from "@/lib/tiers";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 import type { CompDetail } from "@/server/queries/comp";
@@ -174,7 +177,15 @@ export default async function CompDetailPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {/* Record opening a comp (US-041). */}
+      <TrackEvent
+        name={ANALYTICS_EVENTS.compOpen}
+        props={{ slug: comp.slug, tier: comp.tier }}
+      />
       <CompHeader comp={comp} currentPatchId={currentPatchId} />
+      <div className="mt-6">
+        <OpenInBuilder comp={comp} />
+      </div>
       <div className="mt-8 flex flex-col gap-8">
         <CompCarries units={comp.units} />
         <CompItemPriority items={comp.itemPriority} />

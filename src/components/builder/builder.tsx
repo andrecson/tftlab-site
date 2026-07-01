@@ -7,6 +7,7 @@ import { BuilderBoard } from "@/components/builder/builder-board";
 import { ChampionPalette } from "@/components/builder/champion-palette";
 import { ItemPanel } from "@/components/builder/item-panel";
 import { SynergyPanel } from "@/components/builder/synergy-panel";
+import { encodeBoard } from "@/lib/board-code";
 import {
   addUnitItem,
   MAX_ITEMS,
@@ -34,9 +35,25 @@ import type {
  * onto a hex), moved by selecting a placed unit and clicking a destination (or
  * dragging between hexes), and removed via the toolbar / Delete key. A snapshot
  * history backs undo/redo; "Nomes" toggles unit names and "Limpar" empties the
- * board. Everything lives in the client — nothing is written to the server
- * (US-028 will mirror the state into the URL for sharing).
+ * board. Everything lives in the client — nothing is written to the server.
+ *
+ * The board is shareable by link (US-028): the whole state (units + augments) is
+ * encoded into the URL path (`/builder/[code]`) on every edit and "Copiar link"
+ * copies that URL. `initialUnits`/`initialAugments` seed the board when opening a
+ * shared code.
+ *
+ * Admin save mode (US-037): passing `onSave` switches the builder into the
+ * admin's "final board" editor. It adds a carry toggle (per selected unit) and a
+ * "Salvar board" button, and stops mirroring the state into the URL / hides the
+ * share button (the admin persists to the DB instead of sharing a code). The same
+ * component powers the public builder and the admin build page.
  */
+
+/** Result of an admin save (US-037). */
+export interface BuilderSaveResult {
+  ok: boolean;
+  error?: string;
+}
 
 /** Generate a stable local id for a placed unit. */
 function newUnitId(): string {
@@ -57,21 +74,44 @@ export function Builder({
   traits,
   items,
   augments,
+  initialUnits = [],
+  initialAugments = [],
+  onSave,
 }: {
   champions: BuilderChampion[];
   traits: BuilderTraitInfo[];
   items: BuilderItem[];
   augments: BuilderAugment[];
+  initialUnits?: PlacedUnit[];
+  initialAugments?: string[];
+  /**
+   * When provided, the builder runs in admin save mode (US-037): it persists the
+   * board through this callback instead of mirroring it into the URL. Receives
+   * the live placed units (with `isCarry`) and the selected augment ids.
+   */
+  onSave?: (
+    units: PlacedUnit[],
+    augments: string[],
+  ) => Promise<BuilderSaveResult>;
 }) {
-  // Snapshot history for undo/redo. `history[cursor]` is the live board.
-  const [history, setHistory] = useState<PlacedUnit[][]>([[]]);
+  const adminMode = typeof onSave === "function";
+  // Snapshot history for undo/redo. `history[cursor]` is the live board. Seeded
+  // from a shared code's units when opening `/builder/[code]` (US-028).
+  const [history, setHistory] = useState<PlacedUnit[][]>([initialUnits]);
   const [cursor, setCursor] = useState(0);
   const [armedChampionId, setArmedChampionId] = useState<string | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [showNames, setShowNames] = useState(false);
   // Board-level augment selection (up to MAX_AUGMENTS). Not part of the unit
   // undo/redo history — it's an independent, comp-wide choice.
-  const [selectedAugments, setSelectedAugments] = useState<string[]>([]);
+  const [selectedAugments, setSelectedAugments] =
+    useState<string[]>(initialAugments);
+  // Transient "Link copiado!" toast state for the share button.
+  const [copied, setCopied] = useState(false);
+  // Admin save mode (US-037): in-flight + result feedback for "Salvar board".
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedOk, setSavedOk] = useState(false);
 
   const units = history[cursor];
 
@@ -131,6 +171,62 @@ export function Builder({
   const canUndo = cursor > 0;
   const canRedo = cursor < history.length - 1;
 
+  // Encode the whole board (units + augments) into a URL-safe share code. Local
+  // ids are ephemeral, so they're stripped before encoding (US-028).
+  const shareCode = useMemo(
+    () =>
+      encodeBoard({
+        units: units.map((unit) => ({
+          championId: unit.championId,
+          row: unit.row,
+          col: unit.col,
+          stars: unit.stars,
+          items: unit.items,
+        })),
+        augments: selectedAugments,
+      }),
+    [selectedAugments, units],
+  );
+  const isEmptyBoard = units.length === 0 && selectedAugments.length === 0;
+  const sharePath = isEmptyBoard ? "/builder" : `/builder/${shareCode}`;
+
+  // Mirror the board into the URL path without a Next navigation — keeps the
+  // page static and the builder purely client-side. Reloading the resulting
+  // `/builder/[code]` URL reconstructs this exact board. Skipped in admin save
+  // mode (US-037): the admin edits a specific comp at its own URL and persists
+  // to the DB, so the board must not hijack the address bar.
+  useEffect(() => {
+    if (adminMode || typeof window === "undefined") return;
+    const url = sharePath + window.location.search + window.location.hash;
+    window.history.replaceState(window.history.state, "", url);
+  }, [adminMode, sharePath]);
+
+  // Auto-clear the "Link copiado!" toast.
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  // Auto-clear the "Board salvo" confirmation (US-037).
+  useEffect(() => {
+    if (!savedOk) return;
+    const timer = setTimeout(() => setSavedOk(false), 2500);
+    return () => clearTimeout(timer);
+  }, [savedOk]);
+
+  const copyLink = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    const url = window.location.origin + sharePath;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+    } catch {
+      // Clipboard access can be blocked (insecure context / denied permission);
+      // the address bar already reflects the board, so copying it still works.
+    }
+  }, [sharePath]);
+
   // Push a new board snapshot, discarding any redo branch ahead of the cursor.
   const commit = useCallback(
     (next: PlacedUnit[]) => {
@@ -144,7 +240,15 @@ export function Builder({
   const placeChampion = useCallback(
     (championId: string, row: number, col: number) => {
       const next = units.filter((u) => !(u.row === row && u.col === col));
-      next.push({ id: newUnitId(), championId, row, col, stars: 1, items: [] });
+      next.push({
+        id: newUnitId(),
+        championId,
+        row,
+        col,
+        stars: 1,
+        items: [],
+        isCarry: false,
+      });
       commit(next);
     },
     [commit, units],
@@ -274,6 +378,33 @@ export function Builder({
     setSelectedAugments((prev) => toggleAugment(prev, augmentId));
   }, []);
 
+  // Admin (US-037): toggle a placed unit's carry flag (undoable via history).
+  const toggleSelectedCarry = useCallback(() => {
+    if (!selectedUnitId) return;
+    commit(
+      units.map((u) =>
+        u.id === selectedUnitId ? { ...u, isCarry: !u.isCarry } : u,
+      ),
+    );
+  }, [commit, selectedUnitId, units]);
+
+  // Admin (US-037): persist the current board to the DB via the `onSave` prop.
+  const handleSave = useCallback(async () => {
+    if (!onSave || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    setSavedOk(false);
+    try {
+      const result = await onSave(units, selectedAugments);
+      if (result.ok) setSavedOk(true);
+      else setSaveError(result.error ?? "Falha ao salvar o board.");
+    } catch {
+      setSaveError("Erro inesperado ao salvar o board.");
+    } finally {
+      setSaving(false);
+    }
+  }, [onSave, saving, selectedAugments, units]);
+
   const removeSelected = useCallback(() => {
     if (!selectedUnitId) return;
     commit(units.filter((u) => u.id !== selectedUnitId));
@@ -393,6 +524,25 @@ export function Builder({
           >
             Limpar
           </button>
+          {adminMode ? (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? "Salvando…" : "Salvar board"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={copyLink}
+              aria-label="Copiar link do time"
+              className={TOOLBAR_BUTTON}
+            >
+              {copied ? "Link copiado!" : "Copiar link"}
+            </button>
+          )}
 
           {selectedUnit ? (
             <div
@@ -423,6 +573,21 @@ export function Builder({
             </div>
           ) : null}
 
+          {adminMode && selectedUnit ? (
+            <button
+              type="button"
+              onClick={toggleSelectedCarry}
+              aria-pressed={selectedUnit.isCarry}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                selectedUnit.isCarry
+                  ? "border-amber-300/50 bg-amber-400/20 text-amber-200"
+                  : "border-border bg-muted/40 text-foreground hover:bg-muted"
+              }`}
+            >
+              {selectedUnit.isCarry ? "★ Carry" : "Marcar carry"}
+            </button>
+          ) : null}
+
           <span className="ml-auto flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
             <span>
               {units.length} unidade{units.length === 1 ? "" : "s"}
@@ -437,6 +602,18 @@ export function Builder({
         <p aria-live="polite" className="text-xs text-muted-foreground">
           {hint}
         </p>
+
+        {adminMode && (saveError || savedOk) ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className={`text-xs font-medium ${
+              saveError ? "text-destructive" : "text-emerald-400"
+            }`}
+          >
+            {saveError ?? "Board salvo."}
+          </p>
+        ) : null}
 
         <BuilderBoard
           units={units}

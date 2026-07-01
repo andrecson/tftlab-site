@@ -1,23 +1,22 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 
 import { TierBands } from "@/components/tier-bands";
-import { TierListFilters } from "@/components/tier-list-filters";
 import { groupByTier } from "@/lib/tiers";
 import { getSiteConfig } from "@/server/queries/config";
 import { getPublishedComps } from "@/server/queries/tierlist";
 
 /**
- * Tier-list page (US-014, filters in US-016) — served at `/`.
+ * Tier-list page (US-014) — served at `/`.
  *
  * Statically rendered with ISR: every PUBLISHED comp is fetched on the server
  * (wrapped in `unstable_cache` tagged `tierlist`, so publishing/unpublishing a
- * comp — US-038 — can refresh it via `revalidateTag("tierlist")`) and shipped
- * to the client, where `TierListFilters` filters it by tier/synergy/champion/
- * search entirely from the URL query string. Because the server component reads
- * no request-time APIs and the client filter is wrapped in `<Suspense>`, the
- * route stays static.
+ * comp — US-038 — can refresh it via `revalidateTag("tierlist")`) and rendered
+ * directly in the S/A/B/C/X bands. The page reads no request-time APIs, so it
+ * stays static.
+ *
+ * US-043 removed the client-side filter bar (tier/synergy/champion/search): the
+ * tier list now shows every published comp with no filter controls or drawer.
  */
 export const revalidate = 3600;
 
@@ -57,21 +56,7 @@ export default async function TierListPage() {
         </p>
       </header>
 
-      {/*
-        The Suspense boundary is required because TierListFilters reads the URL
-        via `useSearchParams`; the fallback prerenders the full, unfiltered tier
-        list so the static HTML still contains all comps.
-      */}
-      <Suspense
-        fallback={
-          <TierBands
-            groups={groupByTier(comps)}
-            currentPatchId={currentPatchId}
-          />
-        }
-      >
-        <TierListFilters comps={comps} currentPatchId={currentPatchId} />
-      </Suspense>
+      <TierBands groups={groupByTier(comps)} currentPatchId={currentPatchId} />
     </div>
   );
 }

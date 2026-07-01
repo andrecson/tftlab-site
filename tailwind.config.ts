@@ -6,6 +6,11 @@ const config: Config = {
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    // src/lib holds client-safe presentational helpers whose class strings are
+    // written out literally (e.g. TIER_META `bg-tier-*`/`border-l-tier-*` in
+    // tiers.ts, cost colors in champion-cost.ts). Without this glob those
+    // utilities are never scanned and silently drop out of the build.
+    "./src/lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {

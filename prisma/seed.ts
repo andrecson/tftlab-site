@@ -14,6 +14,7 @@
  * `version`; SiteConfig on id=1; sample comps are deleted by slug and recreated.
  * Run it with: npx prisma db seed (alias: npm run db:seed).
  */
+import bcrypt from "bcryptjs";
 import { db } from "../src/server/db";
 import { getCatalog } from "../src/server/ddragon";
 
@@ -420,11 +421,55 @@ async function seedSampleData(set: string, setNumber: number): Promise<void> {
   console.log(`Seeded ${created.length} PUBLISHED sample comps: ${created.join("; ")}.`);
 }
 
+// --- Admin user (US-030) -----------------------------------------------------
+
+/**
+ * Upsert the initial ADMIN curator so the admin panel has a login. Credentials
+ * come from ADMIN_EMAIL / ADMIN_PASSWORD (defaults for local dev only) and the
+ * password is stored as a bcrypt hash. Idempotent: keyed on the unique email.
+ */
+async function seedAdminUser(): Promise<void> {
+  const email = (process.env.ADMIN_EMAIL ?? "admin@metacomps.gg").trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD ?? "admin1234";
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  await db.user.upsert({
+    where: { email },
+    update: { passwordHash, role: "ADMIN" },
+    create: { email, name: "Admin", role: "ADMIN", passwordHash },
+  });
+
+  console.log(`Admin user ready: ${email} (role ADMIN).`);
+}
+
+/**
+ * Upsert the shared curator login (US-045): a role EDITOR user whose identifier
+ * is stored in the unique `email` column. Defaults to a simple, shared
+ * "tftlab" / "tftlab" login for internal curation (overridable via
+ * CURATOR_EMAIL / CURATOR_PASSWORD). Idempotent (keyed on the unique email) and
+ * kept SEPARATE from seedAdminUser so it never removes or alters the ADMIN.
+ */
+async function seedCuratorUser(): Promise<void> {
+  const email = (process.env.CURATOR_EMAIL ?? "tftlab").trim().toLowerCase();
+  const password = process.env.CURATOR_PASSWORD ?? "tftlab";
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  await db.user.upsert({
+    where: { email },
+    update: { passwordHash, role: "EDITOR" },
+    create: { email, name: "Curador", role: "EDITOR", passwordHash },
+  });
+
+  console.log(`Curator user ready: ${email} (role EDITOR).`);
+}
+
 // --- Entry point -------------------------------------------------------------
 
 async function main(): Promise<void> {
   const { set, setNumber } = await seedCatalog();
   await seedSampleData(set, setNumber);
+  await seedAdminUser();
+  await seedCuratorUser();
 }
 
 main()

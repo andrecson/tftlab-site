@@ -14,6 +14,18 @@ import type { Tier } from "@prisma/client";
 /** Tier bands in display order (S is strongest, X is situational). */
 export const TIER_ORDER: readonly Tier[] = ["S", "A", "B", "C", "X"] as const;
 
+/**
+ * Type guard for a tier band — accepts only the S/A/B/C/X strings. Lets a server
+ * action validate an untrusted `tier` argument before writing it (US-046
+ * `setCompTier`). Pure/client-safe like the rest of this module.
+ */
+export function isTier(value: unknown): value is Tier {
+  return (
+    typeof value === "string" &&
+    (TIER_ORDER as readonly string[]).includes(value)
+  );
+}
+
 export interface TierGroup<T> {
   tier: Tier;
   comps: T[];

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
+import { ErrorMonitor } from "@/components/error-monitor";
 import {
   SITE_DESCRIPTION,
   SITE_LOCALE,
@@ -44,7 +46,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        {children}
+        <AnalyticsProvider />
+        <ErrorMonitor />
+      </body>
     </html>
   );
 }
