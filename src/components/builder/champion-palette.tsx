@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import { CHAMPION_DND_PREFIX } from "@/lib/builder";
-import { costClass } from "@/lib/champion-cost";
+import { costBorderClass } from "@/lib/champion-cost";
 import type { BuilderChampion } from "@/server/queries/catalog";
 
 /**
@@ -151,14 +151,19 @@ export function ChampionPalette({
                   }}
                   onClick={() => onArm(champion.id)}
                   aria-pressed={armed}
-                  title={champion.name}
+                  aria-label={`${champion.name}, custo ${champion.cost}`}
+                  title={`${champion.name} — custo ${champion.cost}`}
                   className={`flex w-full flex-col items-center gap-1 rounded-md border p-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     armed
                       ? "border-primary bg-primary/10"
                       : "border-transparent bg-muted/40 hover:border-border hover:bg-muted"
                   }`}
                 >
-                  <span className="relative block aspect-square w-full overflow-hidden rounded">
+                  <span
+                    className={`relative block aspect-square w-full overflow-hidden rounded border-2 ${costBorderClass(
+                      champion.cost,
+                    )}`}
+                  >
                     <Image
                       src={champion.iconUrl}
                       alt=""
@@ -169,15 +174,6 @@ export function ChampionPalette({
                   </span>
                   <span className="line-clamp-1 w-full text-[11px] font-medium leading-tight text-foreground">
                     {champion.name}
-                  </span>
-                  <span
-                    className={`inline-flex items-center gap-0.5 rounded border px-1 text-[10px] font-semibold leading-tight tabular-nums ${costClass(
-                      champion.cost,
-                    )}`}
-                    aria-label={`Custo ${champion.cost}`}
-                  >
-                    <span aria-hidden="true">◆</span>
-                    {champion.cost}
                   </span>
                 </button>
               </li>

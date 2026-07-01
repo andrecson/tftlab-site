@@ -21,3 +21,17 @@ const COST_STYLE: Record<number, string> = {
 export function costClass(cost: number): string {
   return COST_STYLE[cost] ?? "border-amber-400/70 text-amber-300";
 }
+
+/** Solid border colour per cost tier, for the palette image outline; > 5 → gold. */
+const COST_BORDER: Record<number, string> = {
+  1: "border-slate-400",
+  2: "border-emerald-400",
+  3: "border-sky-400",
+  4: "border-fuchsia-400",
+  5: "border-amber-400",
+};
+
+/** Border-colour class that outlines a champion image by its cost (US: palette). */
+export function costBorderClass(cost: number): string {
+  return COST_BORDER[cost] ?? "border-amber-400";
+}

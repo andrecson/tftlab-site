@@ -413,6 +413,15 @@ export function Builder({
     setSelectedUnitId(null);
   }, [commit, selectedUnitId, units]);
 
+  // Remove a specific unit — used when it is dragged off the board.
+  const removeUnit = useCallback(
+    (unitId: string) => {
+      commit(units.filter((u) => u.id !== unitId));
+      setSelectedUnitId((cur) => (cur === unitId ? null : cur));
+    },
+    [commit, units],
+  );
+
   const clearBoard = useCallback(() => {
     if (units.length === 0) return;
     setArmedChampionId(null);
@@ -632,6 +641,7 @@ export function Builder({
               onDropChampion={handleDropChampion}
               onMoveUnit={handleMoveUnit}
               onDropItem={handleDropItem}
+              onRemoveUnit={removeUnit}
             />
           </div>
         </div>

@@ -39,6 +39,7 @@ interface BuilderBoardProps {
   onDropChampion: (championId: string, row: number, col: number) => void;
   onMoveUnit: (unitId: string, row: number, col: number) => void;
   onDropItem: (itemId: string, row: number, col: number) => void;
+  onRemoveUnit: (unitId: string) => void;
 }
 
 interface HexProps {
@@ -54,6 +55,7 @@ interface HexProps {
   onDropChampion: (championId: string, row: number, col: number) => void;
   onMoveUnit: (unitId: string, row: number, col: number) => void;
   onDropItem: (itemId: string, row: number, col: number) => void;
+  onRemoveUnit: (unitId: string) => void;
 }
 
 function Hex({
@@ -69,6 +71,7 @@ function Hex({
   onDropChampion,
   onMoveUnit,
   onDropItem,
+  onRemoveUnit,
 }: HexProps) {
   const stars = unit ? clampStars(unit.stars) : 1;
   const carry = unit?.isCarry ?? false;
@@ -127,6 +130,12 @@ function Hex({
             `${UNIT_DND_PREFIX}${unit.id}`,
           );
           event.dataTransfer.effectAllowed = "move";
+        }}
+        onDragEnd={(event) => {
+          // Solto fora de qualquer hex (dropEffect "none") => retira a unidade do board.
+          if (unit && event.dataTransfer.dropEffect === "none") {
+            onRemoveUnit(unit.id);
+          }
         }}
         className="group/hex absolute inset-0 focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring"
         style={glow ? { filter: glow } : undefined}
@@ -216,6 +225,7 @@ export function BuilderBoard({
   onDropChampion,
   onMoveUnit,
   onDropItem,
+  onRemoveUnit,
 }: BuilderBoardProps) {
   const byHex = unitsByHex(units);
 
@@ -253,6 +263,7 @@ export function BuilderBoard({
                   onDropChampion={onDropChampion}
                   onMoveUnit={onMoveUnit}
                   onDropItem={onDropItem}
+                  onRemoveUnit={onRemoveUnit}
                 />
               );
             })}
