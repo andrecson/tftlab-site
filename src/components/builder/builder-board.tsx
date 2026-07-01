@@ -105,6 +105,7 @@ function Hex({
 
   return (
     <div className="relative aspect-square w-[13.333%] shrink-0">
+      <div className="absolute inset-[7%]">
       <button
         type="button"
         onClick={onClick}
@@ -217,6 +218,7 @@ function Hex({
           ))}
         </div>
       ) : null}
+      </div>
     </div>
   );
 }
