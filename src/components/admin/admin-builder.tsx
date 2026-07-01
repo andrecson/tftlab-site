@@ -29,9 +29,7 @@ export function AdminBuilder({
   champions,
   traits,
   items,
-  augments,
   initialUnits,
-  initialAugments,
 }: {
   compId: string;
   champions: BuilderChampion[];
@@ -73,10 +71,9 @@ export function AdminBuilder({
       champions={champions}
       traits={traits}
       items={items}
-      augments={augments}
+      augments={[]}
       initialUnits={initialUnits}
-      initialAugments={initialAugments}
-      maxAugments={Infinity}
+      initialAugments={[]}
       onSave={handleSave}
     />
   );

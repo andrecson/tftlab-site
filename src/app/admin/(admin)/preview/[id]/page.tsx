@@ -8,7 +8,6 @@ import { CompBoard } from "@/components/comp-board";
 import { CompCarries, CompItemPriority } from "@/components/comp-carries";
 import { CompGuide } from "@/components/comp-guide";
 import { CompHeader } from "@/components/comp-header";
-import { CompUnits } from "@/components/comp-units";
 import { OpenInBuilder } from "@/components/open-in-builder";
 import { getAdminCompForPreview } from "@/server/queries/admin";
 import { getSiteConfig } from "@/server/queries/config";
@@ -84,10 +83,9 @@ export default async function CompPreviewPage({
           <OpenInBuilder comp={comp} />
         </div>
         <div className="mt-8 flex flex-col gap-8">
-          <CompCarries units={comp.units} />
-          <CompItemPriority items={comp.itemPriority} />
           <CompBoard units={comp.units} />
-          <CompUnits units={comp.units} />
+          <CompCarries carries={comp.carries} />
+          <CompItemPriority items={comp.itemPriority} />
           <CompAugments
             augments={comp.augments}
             augmentPriority={comp.augmentPriority}

@@ -2,19 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  getAdminCompAugments,
   getAdminCompById,
-  getAdminCompComposition,
+  getAdminCompCarries,
   getAdminCompPriority,
   getPatches,
 } from "@/server/queries/admin";
 import {
+  getBuilderAugments,
   getBuilderChampions,
   getBuilderItems,
-  getBuilderTraits,
 } from "@/server/queries/catalog";
 import { CompForm } from "@/components/admin/comp-form";
 import { CompStatusControls } from "@/components/admin/comp-status-controls";
-import { CompCompositionForm } from "@/components/admin/comp-composition-form";
+import { CompCarriesForm } from "@/components/admin/comp-carries-form";
+import { CompAugmentsForm } from "@/components/admin/comp-augments-form";
 import { CompPriorityForm } from "@/components/admin/comp-priority-form";
 
 export const metadata: Metadata = {
@@ -22,10 +24,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * Edit-comp page (US-034). Under the `(admin)` group (force-dynamic guard/shell).
- * Loads the comp's base/guide fields by id + the patch options in parallel;
- * 404s when the id doesn't resolve. The `new` sibling segment takes precedence
- * over this dynamic `[id]` segment, so `/admin/comps/new` never lands here.
+ * Edit-comp page. Under the `(admin)` group (force-dynamic guard/shell). Loads
+ * the comp's base/guide fields + its carries/augments/priority + the set-scoped
+ * catalogs. Traits and Early/Flex units are no longer edited here — synergies are
+ * computed from the board, and the guide shows only carries + board + augments.
  */
 export default async function EditCompPage({
   params,
@@ -40,14 +42,32 @@ export default async function EditCompPage({
 
   if (!comp) notFound();
 
-  // The composition/priority editors draw from the comp's own set (US-035/036).
-  const [composition, priority, champions, traits, items] = await Promise.all([
-    getAdminCompComposition(comp.id),
-    getAdminCompPriority(comp.id),
-    getBuilderChampions(comp.set),
-    getBuilderTraits(comp.set),
-    getBuilderItems(comp.set),
-  ]);
+  const [carries, augmentIds, priority, champions, items, augments] =
+    await Promise.all([
+      getAdminCompCarries(comp.id),
+      getAdminCompAugments(comp.id),
+      getAdminCompPriority(comp.id),
+      getBuilderChampions(comp.set),
+      getBuilderItems(comp.set),
+      getBuilderAugments(comp.set),
+    ]);
+
+  const championOptions = champions.map((c) => ({
+    id: c.id,
+    name: c.name,
+    iconUrl: c.iconUrl,
+    meta: `Custo ${c.cost}`,
+  }));
+  const itemOptions = items.map((it) => ({
+    id: it.id,
+    name: it.name,
+    iconUrl: it.iconUrl,
+  }));
+  const augmentOptions = augments.map((a) => ({
+    id: a.id,
+    name: a.name,
+    iconUrl: a.iconUrl,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -84,22 +104,19 @@ export default async function EditCompPage({
         comp={{ id: comp.id, slug: comp.slug, status: comp.status }}
       />
 
-      <CompForm
-        patches={patches}
-        comp={comp}
-        champions={champions.map((c) => ({
-          id: c.id,
-          name: c.name,
-          iconUrl: c.iconUrl,
-          meta: `Custo ${c.cost}`,
-        }))}
+      <CompForm patches={patches} comp={comp} champions={championOptions} />
+
+      <CompCarriesForm
+        compId={comp.id}
+        champions={championOptions}
+        items={itemOptions}
+        initial={carries}
       />
 
-      <CompCompositionForm
+      <CompAugmentsForm
         compId={comp.id}
-        champions={champions}
-        traits={traits}
-        initial={composition}
+        augments={augmentOptions}
+        initial={augmentIds}
       />
 
       <CompPriorityForm compId={comp.id} items={items} initial={priority} />

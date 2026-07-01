@@ -7,14 +7,18 @@ import { CompBoard } from "@/components/comp-board";
 import { CompCarries, CompItemPriority } from "@/components/comp-carries";
 import { CompGuide } from "@/components/comp-guide";
 import { CompHeader } from "@/components/comp-header";
-import { CompUnits } from "@/components/comp-units";
 import { OpenInBuilder } from "@/components/open-in-builder";
 import { TrackEvent } from "@/components/analytics/track-event";
 import { ANALYTICS_EVENTS } from "@/lib/analytics";
+import { computeSynergies } from "@/lib/synergy";
 import { TIER_META } from "@/lib/tiers";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 import type { CompDetail } from "@/server/queries/comp";
 import { getCompBySlug, getPublishedCompSlugs } from "@/server/queries/comp";
+import {
+  getBuilderChampions,
+  getBuilderTraits,
+} from "@/server/queries/catalog";
 import { getSiteConfig } from "@/server/queries/config";
 
 /**
@@ -39,7 +43,53 @@ export async function generateStaticParams() {
   return slugs.map((slug) => ({ slug }));
 }
 
-/** Cached comp + current patch id (for badges), tagged per-slug and `tierlist`. */
+/** A computed active synergy for the board, ready to render above it. */
+export interface CompSynergy {
+  key: string;
+  name: string;
+  iconUrl: string;
+  tier: number;
+  count: number;
+  nextBreakpoint: number | null;
+  maxed: boolean;
+}
+
+/**
+ * Compute the active synergies from the comp's on-board CORE units (same engine
+ * the builder uses) — NOT the manually-stored traits. Needs the set's champion→
+ * trait map and trait breakpoints.
+ */
+async function computeCompSynergies(comp: CompDetail): Promise<CompSynergy[]> {
+  const [champions, traits] = await Promise.all([
+    getBuilderChampions(comp.set),
+    getBuilderTraits(comp.set),
+  ]);
+  const champById = new Map(champions.map((c) => [c.id, c]));
+  const boardUnits = comp.units.filter(
+    (u) => u.role === "CORE" && u.boardRow !== null && u.boardCol !== null,
+  );
+  const synergyUnits = boardUnits.map((u) => ({
+    championId: u.championId,
+    traits: (champById.get(u.championId)?.traits ?? []).map((t) => t.id),
+  }));
+  const traitInfos = traits.map((t) => ({
+    key: t.id,
+    name: t.name,
+    breakpoints: t.breakpoints,
+  }));
+  const traitById = new Map(traits.map((t) => [t.id, t]));
+  return computeSynergies(synergyUnits, traitInfos).map((active) => ({
+    key: active.key,
+    name: active.name,
+    iconUrl: traitById.get(active.key)?.iconUrl ?? "",
+    tier: active.tier,
+    count: active.count,
+    nextBreakpoint: active.nextBreakpoint,
+    maxed: active.maxed,
+  }));
+}
+
+/** Cached comp + current patch id (for badges) + computed board synergies. */
 function getCompData(slug: string) {
   return unstable_cache(
     async () => {
@@ -47,7 +97,12 @@ function getCompData(slug: string) {
         getCompBySlug(slug),
         getSiteConfig(),
       ]);
-      return { comp, currentPatchId: config?.currentPatchId ?? null };
+      const synergies = comp ? await computeCompSynergies(comp) : [];
+      return {
+        comp,
+        currentPatchId: config?.currentPatchId ?? null,
+        synergies,
+      };
     },
     ["comp-detail", slug],
     { tags: [`comp:${slug}`, "tierlist"] },
@@ -149,7 +204,7 @@ export default async function CompDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { comp, currentPatchId } = await getCompData(slug);
+  const { comp, currentPatchId, synergies } = await getCompData(slug);
 
   if (!comp) {
     notFound();
@@ -191,8 +246,8 @@ export default async function CompDetailPage({
           on the right. Collapses to a single column below lg. */}
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-8">
-          <CompBoard units={comp.units} />
-          <CompCarries units={comp.units} />
+          <CompBoard units={comp.units} synergies={synergies} />
+          <CompCarries carries={comp.carries} />
           <CompItemPriority items={comp.itemPriority} />
           <CompAugments
             augments={comp.augments}
@@ -201,7 +256,6 @@ export default async function CompDetailPage({
         </div>
         <div className="flex min-w-0 flex-col gap-8">
           <CompGuide comp={comp} />
-          <CompUnits units={comp.units} />
         </div>
       </div>
     </article>

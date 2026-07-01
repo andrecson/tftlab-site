@@ -36,6 +36,17 @@ export const compDetailInclude = Prisma.validator<Prisma.CompInclude>()({
     orderBy: { order: "asc" },
     include: { augment: true },
   },
+  // Dedicated carries (champion + star level + items), independent of the board.
+  carries: {
+    orderBy: { order: "asc" },
+    include: {
+      champion: true,
+      items: {
+        orderBy: { order: "asc" },
+        include: { item: true },
+      },
+    },
+  },
 });
 
 /** A PUBLISHED comp with its full nested content for the detail page. */

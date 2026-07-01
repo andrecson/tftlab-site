@@ -11,21 +11,11 @@ import type { CompDetail } from "@/server/queries/comp";
  * touch. Both are presentational (no `"use client"`); they sit below
  * `<CompHeader/>` on the shared comp-detail page.
  */
-type CompUnitDetail = CompDetail["units"][number];
-
-/** Carries first by `carryOrder` (nulls last), then by their unit `order`. */
-function carriesOf(units: CompDetail["units"]): CompUnitDetail[] {
-  return units
-    .filter((unit) => unit.isCarry)
-    .sort((a, b) => {
-      const ao = a.carryOrder ?? Number.MAX_SAFE_INTEGER;
-      const bo = b.carryOrder ?? Number.MAX_SAFE_INTEGER;
-      return ao !== bo ? ao - bo : a.order - b.order;
-    });
-}
-
-export function CompCarries({ units }: { units: CompDetail["units"] }) {
-  const carries = carriesOf(units);
+export function CompCarries({
+  carries,
+}: {
+  carries: CompDetail["carries"];
+}) {
   if (carries.length === 0) return null;
 
   return (

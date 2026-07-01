@@ -22,6 +22,7 @@ import { UnitRole } from "@prisma/client";
 import type { Tier, Difficulty, AugmentCategory } from "@prisma/client";
 import { requireRole } from "@/auth";
 import { db } from "@/server/db";
+import { clampStars, MAX_ITEMS } from "@/lib/builder";
 import { slugify } from "@/lib/slug";
 import { isTier } from "@/lib/tiers";
 
@@ -439,20 +440,132 @@ export async function updateCompPriority(
   return { ok: true, id: comp.id, slug: comp.slug };
 }
 
+/** Payload for one carry in `updateCompCarries`. */
+export interface CompCarryInput {
+  championId: string;
+  starLevel: number;
+  /** Recommended item ids in build order (capped at MAX_ITEMS). */
+  itemIds: string[];
+}
+
 /**
- * FR-20: a comp may only be PUBLISHED when it has a name, a tier, at least one
- * trait, at least one carry, and a non-empty final board (≥1 on-board CORE
- * unit). Returns the list of missing requirements (empty ⇒ publishable) so the
- * UI can tell the curator exactly what still needs to be filled in.
+ * Replace a comp's editable carries (`CompCarry` + `CompCarryItem`): each carry
+ * is a champion + star level + its recommended items, independent of the board
+ * builder. Champions/items are validated against the comp's own set. Rows are
+ * fully replaced in one transaction (order = list position). Revalidates the
+ * public comp page.
+ */
+export async function updateCompCarries(
+  compId: string,
+  carries: CompCarryInput[],
+): Promise<CompActionResult> {
+  await requireRole("EDITOR");
+
+  const comp = await db.comp.findUnique({
+    where: { id: compId },
+    select: { id: true, slug: true, set: true },
+  });
+  if (!comp) return { ok: false, error: "Comp não encontrada." };
+
+  const clean = carries.filter((c) => c.championId);
+
+  const championIds = dedupe(clean.map((c) => c.championId));
+  if (championIds.length > 0) {
+    const found = await db.champion.count({
+      where: { set: comp.set, id: { in: championIds } },
+    });
+    if (found !== championIds.length) {
+      return { ok: false, error: "Um ou mais campeões são inválidos." };
+    }
+  }
+
+  const allItemIds = dedupe(clean.flatMap((c) => c.itemIds));
+  if (allItemIds.length > 0) {
+    const found = await db.item.count({
+      where: { set: comp.set, id: { in: allItemIds } },
+    });
+    if (found !== allItemIds.length) {
+      return { ok: false, error: "Um ou mais itens são inválidos." };
+    }
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.compCarry.deleteMany({ where: { compId } }); // cascades items
+    for (let i = 0; i < clean.length; i += 1) {
+      const carry = clean[i];
+      await tx.compCarry.create({
+        data: {
+          compId,
+          championId: carry.championId,
+          starLevel: clampStars(carry.starLevel),
+          order: i,
+          items: {
+            create: carry.itemIds
+              .slice(0, MAX_ITEMS)
+              .map((itemId, j) => ({ itemId, order: j })),
+          },
+        },
+      });
+    }
+  });
+
+  revalidateComp(comp.slug);
+  return { ok: true, id: comp.id, slug: comp.slug };
+}
+
+/**
+ * Replace a comp's recommended augments (`CompAugment`) — UNLIMITED and owned by
+ * this dedicated editor, not the board builder. Augments are validated against
+ * the comp's set and fully replaced (order = list position). Revalidates the
+ * public comp page.
+ */
+export async function updateCompAugments(
+  compId: string,
+  augmentIds: string[],
+): Promise<CompActionResult> {
+  await requireRole("EDITOR");
+
+  const comp = await db.comp.findUnique({
+    where: { id: compId },
+    select: { id: true, slug: true, set: true },
+  });
+  if (!comp) return { ok: false, error: "Comp não encontrada." };
+
+  const ids = dedupe(augmentIds);
+  if (ids.length > 0) {
+    const found = await db.augment.count({
+      where: { set: comp.set, id: { in: ids } },
+    });
+    if (found !== ids.length) {
+      return { ok: false, error: "Um ou mais augments são inválidos." };
+    }
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.compAugment.deleteMany({ where: { compId } });
+    if (ids.length > 0) {
+      await tx.compAugment.createMany({
+        data: ids.map((augmentId, i) => ({ compId, augmentId, order: i })),
+      });
+    }
+  });
+
+  revalidateComp(comp.slug);
+  return { ok: true, id: comp.id, slug: comp.slug };
+}
+
+/**
+ * FR-20 (revised): a comp may only be PUBLISHED when it has a name, a tier, at
+ * least one carry (`CompCarry`) and a non-empty final board (≥1 on-board CORE
+ * unit). Returns the list of missing requirements (empty ⇒ publishable).
  */
 async function collectPublishBlockers(comp: {
   id: string;
   name: string;
   tier: Tier;
 }): Promise<string[]> {
-  const [traitCount, carryCount, boardCount] = await Promise.all([
-    db.compTrait.count({ where: { compId: comp.id } }),
-    db.compUnit.count({ where: { compId: comp.id, isCarry: true } }),
+  const [carryCount, boardCount] = await Promise.all([
+    db.compCarry.count({ where: { compId: comp.id } }),
     db.compUnit.count({
       where: {
         compId: comp.id,
@@ -466,9 +579,8 @@ async function collectPublishBlockers(comp: {
   const blockers: string[] = [];
   if (comp.name.trim().length === 0) blockers.push("nome");
   if (!TIERS.includes(comp.tier)) blockers.push("tier");
-  if (traitCount < 1) blockers.push("ao menos 1 sinergia");
   if (carryCount < 1) blockers.push("ao menos 1 carry");
-  if (boardCount < 1) blockers.push("composição final no board");
+  if (boardCount < 1) blockers.push("board montado no builder");
   return blockers;
 }
 

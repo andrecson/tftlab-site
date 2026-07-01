@@ -37,6 +37,7 @@ model Champion {
   traits        ChampionTrait[]
   compUnits     CompUnit[]
   coverForComps Comp[]          @relation("CompCover")
+  carryFor      CompCarry[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
@@ -53,6 +54,7 @@ model Item {
   set            String
   compUnitItems  CompUnitItem[]
   itemPriorities CompItemPriority[]
+  carryItems     CompCarryItem[]
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
@@ -193,6 +195,7 @@ model Comp {
   coverChampion     Champion?          @relation("CompCover", fields: [coverChampionId], references: [id])
   itemPriority      CompItemPriority[]
   augments          CompAugment[]
+  carries           CompCarry[]
   tierSnapshots     CompTierSnapshot[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -258,6 +261,34 @@ model CompUnitItem {
   item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([compUnitId])
+  @@index([itemId])
+}
+
+// A comp's editable carries (dedicated carries editor): champion + star level +
+// recommended items, independent of the board builder / CompUnit.
+model CompCarry {
+  id         String          @id @default(cuid())
+  compId     String
+  championId String
+  starLevel  Int             @default(3)
+  order      Int
+  comp       Comp            @relation(fields: [compId], references: [id], onDelete: Cascade)
+  champion   Champion        @relation(fields: [championId], references: [id], onDelete: Cascade)
+  items      CompCarryItem[]
+
+  @@index([compId])
+  @@index([championId])
+}
+
+model CompCarryItem {
+  id          String    @id @default(cuid())
+  compCarryId String
+  itemId      String
+  order       Int
+  compCarry   CompCarry @relation(fields: [compCarryId], references: [id], onDelete: Cascade)
+  item        Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([compCarryId])
   @@index([itemId])
 }
 

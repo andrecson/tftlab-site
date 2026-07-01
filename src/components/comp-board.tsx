@@ -73,7 +73,24 @@ function Hex({
   );
 }
 
-export function CompBoard({ units }: { units: CompDetail["units"] }) {
+/** A computed active synergy rendered as a chip above the board. */
+export interface BoardSynergy {
+  key: string;
+  name: string;
+  iconUrl: string;
+  tier: number;
+  count: number;
+  nextBreakpoint: number | null;
+  maxed: boolean;
+}
+
+export function CompBoard({
+  units,
+  synergies = [],
+}: {
+  units: CompDetail["units"];
+  synergies?: BoardSynergy[];
+}) {
   const [showNames, setShowNames] = useState(false);
 
   const byHex = new Map<string, CompUnitDetail>();
@@ -100,6 +117,39 @@ export function CompBoard({ units }: { units: CompDetail["units"] }) {
           {showNames ? "Ocultar nomes" : "Mostrar nomes"}
         </button>
       </div>
+
+      {/* Computed synergies (from the board units) shown above the board. */}
+      {synergies.length > 0 ? (
+        <ul className="flex flex-wrap items-center gap-2">
+          {synergies.map((synergy) => (
+            <li
+              key={synergy.key}
+              className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 px-2 py-1 text-sm"
+              title={`${synergy.name} ${synergy.count}${
+                synergy.maxed || synergy.nextBreakpoint === null
+                  ? ""
+                  : `/${synergy.nextBreakpoint}`
+              }`}
+            >
+              {synergy.iconUrl ? (
+                <Image
+                  src={synergy.iconUrl}
+                  alt=""
+                  width={18}
+                  height={18}
+                  className="h-[18px] w-[18px]"
+                />
+              ) : null}
+              <span className="font-medium text-foreground">
+                {synergy.name}
+              </span>
+              <span className="tabular-nums text-muted-foreground">
+                {synergy.count}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <div className="mx-auto w-full max-w-lg rounded-xl border border-[#20344f] bg-[#122236] p-3 shadow-inner sm:p-4">
         <div className="flex flex-col">

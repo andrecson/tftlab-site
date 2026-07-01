@@ -257,6 +257,43 @@ export async function getAdminCompComposition(
   };
 }
 
+/** One carry as loaded into the carries editor (champion + stars + item ids). */
+export interface AdminCompCarry {
+  championId: string;
+  starLevel: number;
+  itemIds: string[];
+}
+
+/** Load a comp's editable carries (ordered) for the carries admin form. */
+export async function getAdminCompCarries(
+  compId: string,
+): Promise<AdminCompCarry[]> {
+  const carries = await db.compCarry.findMany({
+    where: { compId },
+    orderBy: { order: "asc" },
+    select: {
+      championId: true,
+      starLevel: true,
+      items: { orderBy: { order: "asc" }, select: { itemId: true } },
+    },
+  });
+  return carries.map((c) => ({
+    championId: c.championId,
+    starLevel: c.starLevel,
+    itemIds: c.items.map((it) => it.itemId),
+  }));
+}
+
+/** Load a comp's recommended augment ids (ordered) for the augments admin form. */
+export async function getAdminCompAugments(compId: string): Promise<string[]> {
+  const augments = await db.compAugment.findMany({
+    where: { compId },
+    orderBy: { order: "asc" },
+    select: { augmentId: true },
+  });
+  return augments.map((a) => a.augmentId);
+}
+
 /**
  * The general item priority + augment-category priority a curator edits in
  * US-036. The recommended augments themselves (`CompAugment`) and the final CORE

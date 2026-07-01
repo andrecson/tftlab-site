@@ -132,23 +132,11 @@ export async function saveCompBoard(
     }
   }
 
-  // Recommended augments for the comp guide are uncapped (unlimited).
-  const augmentIds = dedupe(cleanIds(input.augmentIds));
-  if (augmentIds.length > 0) {
-    const found = await db.augment.count({
-      where: { set: comp.set, id: { in: augmentIds } },
-    });
-    if (found !== augmentIds.length) {
-      return { ok: false, error: "Um ou mais augments são inválidos." };
-    }
-  }
-
   await db.$transaction(async (tx) => {
     // Replace only CORE (on-board) units — deleting a CompUnit cascades its
-    // CompUnitItems. EARLY/FLEX units are the composition editor's domain.
+    // CompUnitItems. EARLY/FLEX units and the comp's recommended augments are
+    // owned by their own editors, so a board save leaves them untouched.
     await tx.compUnit.deleteMany({ where: { compId, role: UnitRole.CORE } });
-    // Replace the recommended augments wholesale.
-    await tx.compAugment.deleteMany({ where: { compId } });
 
     let carryOrder = 0;
     for (let i = 0; i < units.length; i += 1) {
@@ -173,20 +161,10 @@ export async function saveCompBoard(
         },
       });
     }
-
-    if (augmentIds.length > 0) {
-      await tx.compAugment.createMany({
-        data: augmentIds.map((augmentId, i) => ({
-          compId,
-          augmentId,
-          order: i,
-        })),
-      });
-    }
   });
 
-  // Board edits change what the public comp page renders (board, carries,
-  // per-unit items, recommended augments) — refresh its ISR cache + tier list.
+  // Board edits change what the public comp page renders (board + per-unit
+  // items) — refresh its ISR cache + tier list.
   revalidateTag(`comp:${comp.slug}`);
   revalidateTag("tierlist");
 
