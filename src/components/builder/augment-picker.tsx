@@ -58,8 +58,8 @@ export function AugmentPicker({
         </span>
       </div>
 
-      {/* Chosen augment slots. */}
-      <ul className="flex items-center gap-2">
+      {/* Chosen augment slots — empilhados na vertical (coluna estreita). */}
+      <ul className="flex flex-col items-start gap-2">
         {Array.from({ length: MAX_AUGMENTS }, (_, slot) => {
           const augmentId = selected[slot];
           const augment = augmentId ? augmentsById.get(augmentId) : undefined;
@@ -129,7 +129,7 @@ export function AugmentPicker({
               Nenhum augment encontrado.
             </p>
           ) : (
-            <ul className="grid max-h-64 grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-5">
+            <ul className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto pr-1">
               {visible.map((augment) => {
                 const isSelected = selectedIds.has(augment.id);
                 const disabled = full && !isSelected;

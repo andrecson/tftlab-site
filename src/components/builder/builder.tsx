@@ -633,7 +633,7 @@ export function Builder({
         ) : null}
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-          <div className="w-full lg:w-72 lg:shrink-0">
+          <div className="w-full lg:w-52 lg:shrink-0">
             <SynergyPanel active={activeTraits} traitsById={traitsById} />
           </div>
           <div className="min-w-0 flex-1">
@@ -653,7 +653,7 @@ export function Builder({
             />
           </div>
           {augments.length > 0 ? (
-            <div className="w-full lg:w-56 lg:shrink-0">
+            <div className="w-full lg:w-44 lg:shrink-0">
               <AugmentPicker
                 augments={augments}
                 augmentsById={augmentsById}
