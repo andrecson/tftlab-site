@@ -68,12 +68,12 @@ git push -u origin main
    `sa-east-1`, se disponível; senão `us-east`).
 3. Após criar, abra **Connection Details** e copie **duas** strings:
    - **Pooled connection** (o host tem `-pooler`) → vai virar `DATABASE_URL`
-   - **Direct connection** (sem `-pooler`) → vai virar `DIRECT_URL`
+   - **Direct connection** (sem `-pooler`) → vai virar `DATABASE_URL_UNPOOLED`
 
    Ambas terminam com `?sslmode=require`. Exemplo:
    ```
-   DATABASE_URL = postgresql://user:pass@ep-xxx-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require
-   DIRECT_URL   = postgresql://user:pass@ep-xxx.sa-east-1.aws.neon.tech/neondb?sslmode=require
+   DATABASE_URL          = postgresql://user:pass@ep-xxx-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require
+   DATABASE_URL_UNPOOLED = postgresql://user:pass@ep-xxx.sa-east-1.aws.neon.tech/neondb?sslmode=require
    ```
 
 > Por que duas? O app (serverless na Vercel) usa a **pooled** pra não estourar
@@ -94,7 +94,7 @@ git push -u origin main
    | Variável | Valor |
    |---|---|
    | `DATABASE_URL` | string **pooled** da Neon |
-   | `DIRECT_URL` | string **direct** da Neon |
+   | `DATABASE_URL_UNPOOLED` | string **direct** da Neon |
    | `AUTH_SECRET` | gere com `openssl rand -base64 33` |
    | `AUTH_TRUST_HOST` | `true` |
    | `NEXT_PUBLIC_SITE_URL` | a URL de **teste** (a `*.vercel.app`, ou `https://teste.tftlab.com.br`) |
@@ -123,7 +123,7 @@ Rode localmente apontando pro Neon (substitua pelas suas strings):
 ```bash
 # no ralph/, temporariamente com as URLs da Neon:
 export DATABASE_URL="postgresql://...-pooler...neon.tech/neondb?sslmode=require"
-export DIRECT_URL="postgresql://...neon.tech/neondb?sslmode=require"
+export DATABASE_URL_UNPOOLED="postgresql://...neon.tech/neondb?sslmode=require"
 
 # 1) usuários (admin + curador) + config inicial:
 npm run db:seed
@@ -231,7 +231,7 @@ git add -A && git commit -m "..." && git push
 | Variável | Obrigatória | Onde |
 |---|---|---|
 | `DATABASE_URL` | ✅ | Neon (pooled) |
-| `DIRECT_URL` | ✅ | Neon (direct) |
+| `DATABASE_URL_UNPOOLED` | ✅ | Neon (direct) |
 | `AUTH_SECRET` | ✅ | gerar (`openssl rand -base64 33`) |
 | `AUTH_TRUST_HOST` | ✅ | `true` |
 | `NEXT_PUBLIC_SITE_URL` | ✅ | URL de teste agora; `https://tftlab.com.br` ao ir ao ar |
