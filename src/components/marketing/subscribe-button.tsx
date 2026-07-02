@@ -46,13 +46,14 @@ export function SubscribeButton({ plan }: { plan: Plan }) {
     );
   }
 
+  // Checkout goes through Discord OAuth first (/api/discord/login) so the
+  // payment can be attributed to the buyer's Discord account and the webhook
+  // can grant the subscriber role. Same-tab navigation (cookie-based state).
   return (
     <div className="mt-8 space-y-2">
       {mpLink && (
         <a
-          href={mpLink}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`/api/discord/login?provider=mp&plan=${plan.interval}`}
           className="flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wide text-primary-foreground shadow-[0_0_16px_hsl(var(--primary)/0.4)] transition-opacity hover:opacity-90"
         >
           Pix · boleto · cartão
@@ -60,17 +61,15 @@ export function SubscribeButton({ plan }: { plan: Plan }) {
       )}
       {stripeLink && (
         <a
-          href={stripeLink}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`/api/discord/login?provider=stripe&plan=${plan.interval}`}
           className="flex items-center justify-center rounded-lg border border-border px-6 py-3 text-sm font-bold uppercase tracking-wide text-foreground transition-colors hover:border-primary/50"
         >
           Cartão de crédito
         </a>
       )}
       <p className="text-[11px] text-muted-foreground">
-        {mpLink ? "Pix/boleto/cartão via Mercado Pago. " : ""}Após pagar, você
-        vincula o Discord e recebe o cargo de assinante.
+        Você vincula o Discord e faz o pagamento; o cargo de assinante é liberado
+        assim que a compra é confirmada.
       </p>
     </div>
   );

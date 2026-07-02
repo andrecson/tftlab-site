@@ -363,3 +363,63 @@ model User {
   passwordHash String?
   createdAt    DateTime @default(now())
 }
+
+// ---------------------------------------------------------------------------
+// Subscriptions (payments → Discord subscriber role)
+// The site keeps checkout on hosted Payment Links (Stripe recurring / Mercado
+// Pago one-time). To know WHICH Discord user paid, the buyer links Discord
+// (OAuth) BEFORE checkout → a PENDING Subscriber keyed by `discordId`. The
+// provider webhook then flips it to ACTIVE and the Discord role is granted:
+//   - Stripe: matched by `stripeSubscriptionId` / the Checkout `client_reference_id`
+//     (= this row's `id`); renewals/cancels sync `currentPeriodEnd` + status.
+//   - Mercado Pago: one-time payment matched by payer `email`; access lasts a
+//     fixed window (see PLAN_DURATION_DAYS) and is expired by the cron route.
+// `WebhookEvent` makes webhook processing idempotent (providers retry).
+// ---------------------------------------------------------------------------
+
+enum PaymentProvider {
+  STRIPE
+  MERCADOPAGO
+}
+
+enum SubscriberStatus {
+  PENDING // Discord linked, awaiting payment confirmation
+  ACTIVE // paid + role granted, within the access window
+  EXPIRED // access window ended (MP one-time lapsed, or Stripe period ended)
+  CANCELED // Stripe subscription canceled
+}
+
+model Subscriber {
+  id              String           @id @default(cuid())
+  discordId       String           @unique
+  discordUsername String?
+  email           String?
+  // "month" | "year" — mirrors the plan interval the buyer chose.
+  plan            String
+  provider        PaymentProvider?
+  status          SubscriberStatus @default(PENDING)
+  // Access is live while status = ACTIVE and now() < currentPeriodEnd.
+  currentPeriodEnd DateTime?
+  // Whether the Discord role is currently applied (drives grant/revoke).
+  roleGranted     Boolean          @default(false)
+  // Stripe linkage (recurring).
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  // Mercado Pago linkage (last approved one-time payment).
+  mpPaymentId          String? @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([status, currentPeriodEnd])
+  @@index([email])
+}
+
+model WebhookEvent {
+  id        String          @id @default(cuid())
+  provider  PaymentProvider
+  // Provider-side event / payment id — the idempotency key.
+  eventId   String
+  createdAt DateTime        @default(now())
+
+  @@unique([provider, eventId])
+}
