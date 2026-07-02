@@ -17,12 +17,20 @@ import {
 } from "@/server/queries/catalog";
 
 export const getBuilderCatalog = unstable_cache(
-  async () => ({
-    champions: await getBuilderChampions(),
-    traits: await getBuilderTraits(),
-    items: await getBuilderItems(),
-    augments: await getBuilderAugments(),
-  }),
+  async () => {
+    try {
+      return {
+        champions: await getBuilderChampions(),
+        traits: await getBuilderTraits(),
+        items: await getBuilderItems(),
+        augments: await getBuilderAugments(),
+      };
+    } catch {
+      // No DB at build time (e.g. `docker build`) → ship an empty catalog so the
+      // page still prerenders; ISR refreshes it once the database is reachable.
+      return { champions: [], traits: [], items: [], augments: [] };
+    }
+  },
   ["builder-catalog"],
   { tags: ["catalog"] },
 );

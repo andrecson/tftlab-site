@@ -1,6 +1,6 @@
 #!/bin/bash
-# One-time SSL bootstrap: brings nginx up HTTP-only, gets Let's Encrypt certs for
-# the site (apex + www) and the payment subdomain, then reloads nginx with HTTPS.
+# One-time SSL bootstrap: brings nginx up HTTP-only, gets a Let's Encrypt cert
+# for the site (apex + www), then reloads nginx with HTTPS.
 # Run once from deploy/ after DNS points at this server:  ./init-ssl.sh
 set -e
 
@@ -20,12 +20,6 @@ docker compose run --rm --entrypoint certbot certbot certonly \
   --webroot -w /var/www/certbot \
   --email "$SSL_EMAIL" --agree-tos --no-eff-email \
   -d tftlab.com.br -d www.tftlab.com.br
-
-echo "==> Requesting certificate for pagamento.tftlab.com.br…"
-docker compose run --rm --entrypoint certbot certbot certonly \
-  --webroot -w /var/www/certbot \
-  --email "$SSL_EMAIL" --agree-tos --no-eff-email \
-  -d pagamento.tftlab.com.br
 
 echo "==> Restarting nginx with HTTPS…"
 docker compose restart nginx
