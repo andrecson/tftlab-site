@@ -46,3 +46,9 @@ next-env.d.ts
 
 # Referência do site antigo (Hostinger Horizons) — não versionar
 .horizons-ref/
+
+# VPS deploy: bot clonado + dados/certs/segredos (não versionar)
+/bot/
+deploy/.env
+deploy/certbot/
+deploy/data/
