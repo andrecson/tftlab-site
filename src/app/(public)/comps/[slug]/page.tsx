@@ -39,8 +39,14 @@ import { getSiteConfig } from "@/server/queries/config";
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const slugs = await getPublishedCompSlugs();
-  return slugs.map((slug) => ({ slug }));
+  try {
+    const slugs = await getPublishedCompSlugs();
+    return slugs.map((slug) => ({ slug }));
+  } catch {
+    // No DB at build time (e.g. `docker build`) → prerender nothing; pages are
+    // generated on-demand at runtime via ISR (dynamicParams defaults to true).
+    return [];
+  }
 }
 
 /** A computed active synergy for the board, ready to render above it. */

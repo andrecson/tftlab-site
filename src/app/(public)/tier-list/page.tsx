@@ -30,11 +30,17 @@ export const metadata: Metadata = {
  */
 const getTierListData = unstable_cache(
   async () => {
-    const [comps, config] = await Promise.all([
-      getPublishedComps(),
-      getSiteConfig(),
-    ]);
-    return { comps, currentPatchId: config?.currentPatchId ?? null };
+    try {
+      const [comps, config] = await Promise.all([
+        getPublishedComps(),
+        getSiteConfig(),
+      ]);
+      return { comps, currentPatchId: config?.currentPatchId ?? null };
+    } catch {
+      // No DB at build time (e.g. `docker build`) → render empty; ISR refreshes
+      // at runtime once the database is reachable.
+      return { comps: [], currentPatchId: null };
+    }
   },
   ["tierlist-page-data"],
   { tags: ["tierlist"] },

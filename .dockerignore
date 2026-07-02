@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+.horizons-ref
+bot
+deploy/certbot
+npm-debug.log*
+*.md
+.claude
+scratchpad

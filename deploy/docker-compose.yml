@@ -1,0 +1,121 @@
+# Unified VPS stack: TFTLab site (Next.js) + the discord-stripe payment bot,
+# each with its own Postgres, behind one Nginx (SSL via certbot).
+#
+# Layout on the VPS (run `docker compose` from this deploy/ dir):
+#   /opt/tftlab/            <- this site repo (context "..")
+#   /opt/tftlab/bot/        <- the bot repo, cloned here (context "../bot")
+#   /opt/tftlab/deploy/     <- this folder (docker-compose.yml, nginx/, .env)
+#
+# Domains (set in .env): tftlab.com.br -> site ; pagamento.tftlab.com.br -> bot.
+
+services:
+  # --- Site (Next.js) --------------------------------------------------------
+  site-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${SITE_DB_USER:-tftlab}
+      POSTGRES_PASSWORD: ${SITE_DB_PASSWORD:?SITE_DB_PASSWORD required}
+      POSTGRES_DB: ${SITE_DB_NAME:-tftlab_site}
+    volumes:
+      - ./data/site-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SITE_DB_USER:-tftlab} -d ${SITE_DB_NAME:-tftlab_site}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  site:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+        NEXT_PUBLIC_NOINDEX: ${NEXT_PUBLIC_NOINDEX:-}
+        NEXT_PUBLIC_STRIPE_LINK_MONTH: ${NEXT_PUBLIC_STRIPE_LINK_MONTH:-}
+        NEXT_PUBLIC_STRIPE_LINK_YEAR: ${NEXT_PUBLIC_STRIPE_LINK_YEAR:-}
+        NEXT_PUBLIC_MP_LINK_MONTH: ${NEXT_PUBLIC_MP_LINK_MONTH:-}
+        NEXT_PUBLIC_MP_LINK_YEAR: ${NEXT_PUBLIC_MP_LINK_YEAR:-}
+    restart: unless-stopped
+    depends_on:
+      site-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${SITE_DB_USER:-tftlab}:${SITE_DB_PASSWORD}@site-db:5432/${SITE_DB_NAME:-tftlab_site}
+      DATABASE_URL_UNPOOLED: postgresql://${SITE_DB_USER:-tftlab}:${SITE_DB_PASSWORD}@site-db:5432/${SITE_DB_NAME:-tftlab_site}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: "true"
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      CURATOR_EMAIL: ${CURATOR_EMAIL}
+      CURATOR_PASSWORD: ${CURATOR_PASSWORD}
+
+  # --- Bot (discord-stripe-bot) ---------------------------------------------
+  bot-db:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-discord_bot}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      POSTGRES_DB: ${DB_NAME:-discord_stripe_bot}
+    volumes:
+      - ./data/bot-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-discord_bot} -d ${DB_NAME:-discord_stripe_bot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build:
+      context: ../bot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      bot-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-discord_bot}:${DB_PASSWORD}@bot-db:5432/${DB_NAME:-discord_stripe_bot}
+      PORT: 3000
+      BASE_URL: ${BOT_BASE_URL}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET}
+      MP_PRICE_MONTH: ${MP_PRICE_MONTH}
+      MP_PRICE_YEAR: ${MP_PRICE_YEAR}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
+      DISCORD_ROLE_ID: ${DISCORD_ROLE_ID}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+
+  # --- Nginx + SSL -----------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/http.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl.conf:/etc/nginx/ssl-available.conf:ro
+      - ./nginx/enable-ssl.sh:/docker-entrypoint.d/40-enable-ssl.sh:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+    depends_on:
+      - site
+      - bot
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done'"

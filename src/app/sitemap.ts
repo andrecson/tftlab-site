@@ -14,7 +14,14 @@ import { getPublishedCompsForSitemap } from "@/server/queries/comp";
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const comps = await getPublishedCompsForSitemap();
+  // Resilient to no DB at build time (docker build): fall back to just the
+  // static routes; the comp entries fill in on the next ISR revalidation.
+  let comps: Awaited<ReturnType<typeof getPublishedCompsForSitemap>> = [];
+  try {
+    comps = await getPublishedCompsForSitemap();
+  } catch {
+    comps = [];
+  }
 
   const compEntries: MetadataRoute.Sitemap = comps.map((comp) => ({
     url: absoluteUrl(`/comps/${comp.slug}`),

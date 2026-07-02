@@ -1,0 +1,61 @@
+# syntax=docker/dockerfile:1
+# Production image for the TFTLab Next.js site (VPS/Docker). Multi-stage:
+# deps → build (standalone) → minimal runner that migrates + starts the server.
+
+# ---- deps -------------------------------------------------------------------
+FROM node:20-alpine AS deps
+RUN apk add --no-cache openssl libc6-compat
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# ---- builder ----------------------------------------------------------------
+FROM node:20-alpine AS builder
+RUN apk add --no-cache openssl libc6-compat
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# NEXT_PUBLIC_* are inlined at build time → passed as build args.
+ARG NEXT_PUBLIC_SITE_URL
+ARG NEXT_PUBLIC_NOINDEX
+ARG NEXT_PUBLIC_STRIPE_LINK_MONTH
+ARG NEXT_PUBLIC_STRIPE_LINK_YEAR
+ARG NEXT_PUBLIC_MP_LINK_MONTH
+ARG NEXT_PUBLIC_MP_LINK_YEAR
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    NEXT_PUBLIC_NOINDEX=$NEXT_PUBLIC_NOINDEX \
+    NEXT_PUBLIC_STRIPE_LINK_MONTH=$NEXT_PUBLIC_STRIPE_LINK_MONTH \
+    NEXT_PUBLIC_STRIPE_LINK_YEAR=$NEXT_PUBLIC_STRIPE_LINK_YEAR \
+    NEXT_PUBLIC_MP_LINK_MONTH=$NEXT_PUBLIC_MP_LINK_MONTH \
+    NEXT_PUBLIC_MP_LINK_YEAR=$NEXT_PUBLIC_MP_LINK_YEAR
+
+# Standalone output; the DB is NOT needed at build (DB-touching pages are
+# resilient and fill in via ISR at runtime). A dummy URL satisfies Prisma init.
+ENV DOCKER_BUILD=1
+ENV DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build"
+ENV DATABASE_URL_UNPOOLED="postgresql://build:build@127.0.0.1:5432/build"
+RUN npx prisma generate
+RUN npm run build
+
+# ---- runner -----------------------------------------------------------------
+FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl libc6-compat
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Standalone server bundle + static assets + public.
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+# Prisma CLI + schema + migrations so the container can `migrate deploy` on start.
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+EXPOSE 3000
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node server.js"]

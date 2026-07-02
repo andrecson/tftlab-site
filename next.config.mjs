@@ -3,6 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   // Don't advertise the framework in response headers.
   poweredByHeader: false,
+  // Self-contained server bundle for the Docker/VPS image. Gated behind
+  // DOCKER_BUILD so the Vercel build is unaffected (Vercel manages its own output).
+  ...(process.env.DOCKER_BUILD === "1" ? { output: "standalone" } : {}),
   images: {
     // Champion/trait/item/augment icons are served from Community Dragon
     // (see src/server/ddragon.ts). Whitelisting the host lets next/image render

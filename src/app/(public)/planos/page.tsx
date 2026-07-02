@@ -26,8 +26,9 @@ export default function PlanosPage() {
       </div>
 
       <p className="mx-auto mt-8 max-w-3xl text-center text-xs text-muted-foreground">
-        Pagamento processado com segurança pela nossa loja na Hostinger. Dúvidas
-        sobre os planos? Fale com a gente no WhatsApp.
+        Pagamento seguro via Mercado Pago (Pix, boleto ou cartão) ou Stripe
+        (cartão). Após confirmar, você vincula seu Discord e recebe o cargo de
+        assinante. Dúvidas? Fale com a gente no WhatsApp.
       </p>
     </div>
   );
