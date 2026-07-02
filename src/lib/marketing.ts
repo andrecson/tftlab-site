@@ -23,9 +23,28 @@ export const SOCIAL_LINKS = {
  */
 export const CHECKOUT_URL = WHATSAPP_URL;
 
+/**
+ * Public URL of the payment bot (Discord-Stripe/MercadoPago bot on the VPS),
+ * e.g. https://pagamento.tftlab.com.br. The site POSTs to
+ * `${BOT_URL}/api/mercadopago/preferences/create` to start a Mercado Pago
+ * checkout. Empty until the bot is deployed with its subdomain.
+ */
+export const BOT_URL = (process.env.NEXT_PUBLIC_BOT_URL ?? "").replace(
+  /\/+$/,
+  "",
+);
+
+/** Stripe Payment Link per plan interval (created in the Stripe dashboard). */
+export const STRIPE_LINKS: Record<"month" | "year", string> = {
+  month: process.env.NEXT_PUBLIC_STRIPE_LINK_MONTH ?? "",
+  year: process.env.NEXT_PUBLIC_STRIPE_LINK_YEAR ?? "",
+};
+
 /** A subscription plan (shared by the Home preview + the /planos page). */
 export interface Plan {
   id: string;
+  /** Maps to the bot's plan interval (Stripe `recurring.interval` / MP plan). */
+  interval: "month" | "year";
   name: string;
   price: string;
   period: string;
@@ -39,6 +58,7 @@ export interface Plan {
 export const PLANS: Plan[] = [
   {
     id: "monthly",
+    interval: "month",
     name: "Mensal",
     price: "R$80,00",
     period: "/mês",
@@ -54,6 +74,7 @@ export const PLANS: Plan[] = [
   },
   {
     id: "annual",
+    interval: "year",
     name: "Anual",
     price: "R$40,00",
     period: "/mês",
