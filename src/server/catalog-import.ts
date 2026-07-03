@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { getCatalog } from "./ddragon";
+import { getCatalog, type CdragonChannel } from "./ddragon";
 
 /**
  * On-demand TFT catalog import.
@@ -18,6 +18,8 @@ import { getCatalog } from "./ddragon";
 
 /** Counts written by a catalog import (for logging / the admin toast). */
 export interface CatalogImportResult {
+  /** Which Community Dragon channel the data came from. */
+  channel: CdragonChannel;
   set: string;
   setNumber: number;
   champions: number;
@@ -38,8 +40,10 @@ async function inBatches<T>(
   }
 }
 
-export async function importCatalog(): Promise<CatalogImportResult> {
-  const catalog = await getCatalog();
+export async function importCatalog(
+  channel: CdragonChannel = "latest",
+): Promise<CatalogImportResult> {
+  const catalog = await getCatalog({ channel });
   const { set } = catalog;
 
   // Traits first so champions can resolve their trait ids. Upsert is keyed by
@@ -140,6 +144,7 @@ export async function importCatalog(): Promise<CatalogImportResult> {
   );
 
   return {
+    channel,
     set,
     setNumber: catalog.setNumber,
     champions,

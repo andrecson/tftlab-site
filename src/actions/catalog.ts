@@ -8,6 +8,7 @@ import {
   importCatalog,
   type CatalogImportResult,
 } from "@/server/catalog-import";
+import type { CdragonChannel } from "@/server/ddragon";
 import { db } from "@/server/db";
 
 const ITEM_TYPES: readonly ItemType[] = [
@@ -68,10 +69,14 @@ export type ReimportResult =
  * new item/augment lists immediately. The admin comp editors are force-dynamic,
  * so they pick up the new catalog on the next navigation with no extra work.
  */
-export async function reimportCatalog(): Promise<ReimportResult> {
+export async function reimportCatalog(
+  channel: CdragonChannel = "latest",
+): Promise<ReimportResult> {
   await requireRole("EDITOR");
+  // Trust boundary: a "use server" fn is a public POST — pin to a known channel.
+  const source: CdragonChannel = channel === "pbe" ? "pbe" : "latest";
   try {
-    const result = await importCatalog();
+    const result = await importCatalog(source);
     revalidateTag("catalog");
     return { ok: true, result };
   } catch (error) {

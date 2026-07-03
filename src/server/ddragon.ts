@@ -13,10 +13,23 @@
  * new set ships without code changes.
  */
 
-export const CDRAGON_TFT_DATA_URL =
-  "https://raw.communitydragon.org/latest/cdragon/tft/en_us.json";
+/** Community Dragon release channel: `latest` (live) or `pbe` (next patch). */
+export type CdragonChannel = "latest" | "pbe";
 
-const CDRAGON_GAME_ASSET_BASE = "https://raw.communitydragon.org/latest/game/";
+const CDRAGON_ORIGIN = "https://raw.communitydragon.org";
+
+/** TFT data export URL for a channel. */
+export function cdragonTftDataUrl(channel: CdragonChannel = "latest"): string {
+  return `${CDRAGON_ORIGIN}/${channel}/cdragon/tft/en_us.json`;
+}
+
+/** Game asset (icon) CDN base for a channel. */
+function cdragonGameAssetBase(channel: CdragonChannel = "latest"): string {
+  return `${CDRAGON_ORIGIN}/${channel}/game/`;
+}
+
+/** Back-compat: the live (latest) TFT data URL. */
+export const CDRAGON_TFT_DATA_URL = cdragonTftDataUrl("latest");
 
 export type ItemTypeName =
   | "COMPONENT"
@@ -112,9 +125,12 @@ interface RawTftData {
 // --- Helpers -----------------------------------------------------------------
 
 /** Rewrite a Community Dragon `.tex`/`.dds` asset path to a servable CDN PNG. */
-export function assetUrl(path?: string | null): string {
+export function assetUrl(
+  path?: string | null,
+  base: string = cdragonGameAssetBase("latest"),
+): string {
   if (!path) return "";
-  return CDRAGON_GAME_ASSET_BASE + path.toLowerCase().replace(/\.(tex|dds)$/, ".png");
+  return base + path.toLowerCase().replace(/\.(tex|dds)$/, ".png");
 }
 
 const hasText = (value?: string | null): value is string =>
@@ -173,8 +189,14 @@ async function fetchTftData(url: string): Promise<RawTftData> {
  * Fetch and normalize the current set's catalog from Data Dragon (Community
  * Dragon TFT export). Pure transformation of remote data; performs no DB writes.
  */
-export async function getCatalog(opts?: { url?: string }): Promise<Catalog> {
-  const data = await fetchTftData(opts?.url ?? CDRAGON_TFT_DATA_URL);
+export async function getCatalog(opts?: {
+  channel?: CdragonChannel;
+  url?: string;
+}): Promise<Catalog> {
+  const channel = opts?.channel ?? "latest";
+  const assetBase = cdragonGameAssetBase(channel);
+  const toAsset = (path?: string | null) => assetUrl(path, assetBase);
+  const data = await fetchTftData(opts?.url ?? cdragonTftDataUrl(channel));
   const setData = data.setData ?? [];
   const set = pickCurrentSet(setData);
   const setNumber = Number(set.mutator!.slice(6));
@@ -195,7 +217,7 @@ export async function getCatalog(opts?: { url?: string }): Promise<Catalog> {
       apiId: c.apiName!,
       name: c.name!.trim(),
       cost: c.cost!,
-      iconUrl: assetUrl(c.tileIcon || c.squareIcon || c.icon),
+      iconUrl: toAsset(c.tileIcon || c.squareIcon || c.icon),
       traitNames: [...new Set(c.traits!)],
     }));
 
@@ -204,7 +226,7 @@ export async function getCatalog(opts?: { url?: string }): Promise<Catalog> {
     .map((t) => ({
       apiId: t.apiName!,
       name: t.name!.trim(),
-      iconUrl: assetUrl(t.icon),
+      iconUrl: toAsset(t.icon),
       breakpoints: [
         ...new Set(
           (t.effects ?? [])
@@ -233,7 +255,7 @@ export async function getCatalog(opts?: { url?: string }): Promise<Catalog> {
     itemCandidates.map((i) => ({
       apiId: i.apiName!,
       name: i.name!.trim(),
-      iconUrl: assetUrl(i.icon),
+      iconUrl: toAsset(i.icon),
       type: classifyItem(i.apiName!, i.composition ?? [], componentRefs),
     })),
   );
@@ -251,7 +273,7 @@ export async function getCatalog(opts?: { url?: string }): Promise<Catalog> {
       .map((i) => ({
         apiId: i.apiName!,
         name: i.name!.trim(),
-        iconUrl: assetUrl(i.icon),
+        iconUrl: toAsset(i.icon),
         tier: augmentTier(i.apiName!),
       })),
   );
