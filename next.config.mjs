@@ -3,6 +3,31 @@ const nextConfig = {
   reactStrictMode: true,
   // Don't advertise the framework in response headers.
   poweredByHeader: false,
+  // Baseline security headers on every response (HSTS forces HTTPS after the
+  // first visit; the rest block clickjacking, MIME-sniffing and referrer leaks).
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000",
+          },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+    ];
+  },
   // Self-contained server bundle for the Docker/VPS image. Gated behind
   // DOCKER_BUILD so the Vercel build is unaffected (Vercel manages its own output).
   ...(process.env.DOCKER_BUILD === "1" ? { output: "standalone" } : {}),

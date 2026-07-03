@@ -236,7 +236,11 @@ export default async function CompDetailPage({
     <article className="mx-auto max-w-6xl px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          // Escape `<` so a curator-authored name/description can't break out of
+          // the <script> with a literal `</script>`.
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       {/* Record opening a comp (US-041). */}
       <TrackEvent
