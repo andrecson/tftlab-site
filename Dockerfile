@@ -56,14 +56,13 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Prisma CLI + schema + migrations so the container can `migrate deploy` on start.
+# Prisma schema + migrations (+ seed-users.cjs) for `migrate deploy` on start.
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-# bcryptjs for the production user seed (prisma/seed-users.cjs); the app itself
-# bundles it, so it isn't otherwise present in the standalone node_modules.
-COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
+# Full node_modules overlays the standalone's minimal set so the Prisma CLI can
+# run at startup — it needs its whole dependency tree (@prisma/config, effect, …),
+# not just the prisma package. Also brings the generated client, engines and
+# bcryptjs (used by prisma/seed-users.cjs).
+COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3000
 # Run the Prisma CLI via its real path (not the .bin symlink, which Docker
