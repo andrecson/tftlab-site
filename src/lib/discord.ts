@@ -6,7 +6,8 @@
  * role. Only the bot token is needed at webhook time — no OAuth token is stored.
  *
  * Env: DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_BOT_TOKEN,
- *      DISCORD_GUILD_ID, DISCORD_ROLE_ID.
+ *      DISCORD_GUILD_ID, DISCORD_ROLE_ID, DISCORD_INVITE_CHANNEL_ID (optional,
+ *      for the per-buyer invite in the confirmation email).
  */
 
 const DISCORD_API = "https://discord.com/api/v10";
@@ -114,6 +115,34 @@ export async function grantRole(discordId: string): Promise<boolean> {
     },
   );
   return res.ok; // 204 No Content
+}
+
+/**
+ * Create a FRESH guild invite for the confirmation email — generated per buyer
+ * (unique), so it never goes stale like a fixed public link. Needs
+ * DISCORD_INVITE_CHANNEL_ID (a channel the bot can create invites in) and the
+ * bot's "Create Invite" permission. `max_age: 0` = never expires, `max_uses: 0`
+ * = unlimited. Returns the invite URL, or null if unconfigured / on error.
+ */
+export async function createGuildInvite(): Promise<string | null> {
+  const channelId = process.env.DISCORD_INVITE_CHANNEL_ID;
+  if (!channelId || !process.env.DISCORD_BOT_TOKEN) return null;
+  try {
+    const res = await fetch(`${DISCORD_API}/channels/${channelId}/invites`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        "Content-Type": "application/json",
+        "X-Audit-Log-Reason": "TFTLab: convite de assinatura",
+      },
+      body: JSON.stringify({ max_age: 0, max_uses: 0, unique: true }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { code?: string };
+    return data.code ? `https://discord.gg/${data.code}` : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Revoke the subscriber role. 404 (not a member / already gone) counts as ok. */

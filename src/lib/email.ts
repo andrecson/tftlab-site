@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
 
+import { createGuildInvite } from "@/lib/discord";
+
 /**
  * SMTP email (payment confirmation). Optional: if the SMTP_* env vars are not
  * set, `emailConfigured()` is false and the send helpers no-op, so the payment
@@ -54,8 +56,7 @@ async function send(input: {
   }
 }
 
-function inviteBlockHtml(): string {
-  const invite = process.env.DISCORD_INVITE_URL?.trim();
+function inviteBlockHtml(invite: string | null): string {
   if (!invite) return "";
   return `<p style="margin:24px 0"><a href="${invite}" style="display:inline-block;background:#00d9d9;color:#04121a;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:8px">Entrar no Discord</a></p>`;
 }
@@ -75,7 +76,11 @@ export async function sendPaymentConfirmationEmail(input: {
   plan: string;
 }): Promise<boolean> {
   const planLabel = input.plan === "year" ? "anual" : "mensal";
-  const invite = process.env.DISCORD_INVITE_URL?.trim();
+  // Fresh per-buyer invite (falls back to a static link, then to nothing).
+  const invite =
+    (await createGuildInvite()) ??
+    process.env.DISCORD_INVITE_URL?.trim() ??
+    null;
   const inviteText = invite ? `\n\nEntre no servidor: ${invite}` : "";
 
   const text = `Recebemos seu pagamento do plano ${planLabel} e seu acesso de assinante no TFTLab já está liberado. Você já faz parte do nosso Discord com o cargo de assinante.${inviteText}\n\nValeu por apoiar o TFTLab!`;
@@ -83,7 +88,7 @@ export async function sendPaymentConfirmationEmail(input: {
   const html = shell(
     `<p>Recebemos seu pagamento do plano <strong>${planLabel}</strong> e seu acesso de assinante no TFTLab já está liberado.</p>
      <p>Você já faz parte do nosso Discord com o <strong>cargo de assinante</strong>.</p>
-     ${inviteBlockHtml()}
+     ${inviteBlockHtml(invite)}
      <p>Valeu por apoiar o TFTLab!</p>`,
   );
 
