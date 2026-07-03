@@ -57,6 +57,60 @@ export interface MpPayment {
   transaction_amount?: number;
 }
 
+/**
+ * Create a Checkout Pro preference so the payment carries an `external_reference`
+ * (the subscriber id) — the webhook then matches on that instead of the fragile
+ * payer email. Returns the hosted `init_point` URL, or null on error (caller
+ * falls back to the static link). The app-level webhook (configured in the MP
+ * panel) delivers the notification, so no `notification_url` is set here.
+ */
+export async function createMpPreference(input: {
+  accessToken: string;
+  title: string;
+  amount: number;
+  externalReference: string;
+  payerEmail: string | null;
+  backUrl: string;
+}): Promise<string | null> {
+  if (!input.accessToken || !(input.amount > 0)) return null;
+  try {
+    const res = await fetch("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${input.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        items: [
+          {
+            title: input.title,
+            quantity: 1,
+            unit_price: input.amount,
+            currency_id: "BRL",
+          },
+        ],
+        external_reference: input.externalReference,
+        ...(input.payerEmail ? { payer: { email: input.payerEmail } } : {}),
+        // MP is Pix/boleto only here — card (recurring) goes through Stripe.
+        payment_methods: {
+          excluded_payment_types: [{ id: "credit_card" }, { id: "debit_card" }],
+        },
+        back_urls: {
+          success: input.backUrl,
+          pending: input.backUrl,
+          failure: input.backUrl,
+        },
+        auto_return: "approved",
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { init_point?: string };
+    return data.init_point ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch a payment from the MP REST API to confirm its real status. */
 export async function fetchMpPayment(
   paymentId: string,

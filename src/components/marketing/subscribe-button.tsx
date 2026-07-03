@@ -51,20 +51,20 @@ export function SubscribeButton({ plan }: { plan: Plan }) {
   // can grant the subscriber role. Same-tab navigation (cookie-based state).
   return (
     <div className="mt-8 space-y-2">
-      {mpLink && (
-        <a
-          href={`/api/discord/login?provider=mp&plan=${plan.interval}`}
-          className="flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wide text-primary-foreground shadow-[0_0_16px_hsl(var(--primary)/0.4)] transition-opacity hover:opacity-90"
-        >
-          Pix · boleto
-        </a>
-      )}
       {stripeLink && (
         <a
           href={`/api/discord/login?provider=stripe&plan=${plan.interval}`}
-          className="flex items-center justify-center rounded-lg border border-border px-6 py-3 text-sm font-bold uppercase tracking-wide text-foreground transition-colors hover:border-primary/50"
+          className="flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wide text-primary-foreground shadow-[0_0_16px_hsl(var(--primary)/0.4)] transition-opacity hover:opacity-90"
         >
           Cartão de crédito
+        </a>
+      )}
+      {mpLink && (
+        <a
+          href={`/api/discord/login?provider=mp&plan=${plan.interval}`}
+          className="flex items-center justify-center rounded-lg border border-border px-6 py-3 text-sm font-bold uppercase tracking-wide text-foreground transition-colors hover:border-primary/50"
+        >
+          Pix · boleto
         </a>
       )}
       <p className="text-[11px] text-muted-foreground">

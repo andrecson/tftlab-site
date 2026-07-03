@@ -61,7 +61,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const email = payment.payer?.email ? payment.payer.email.trim().toLowerCase() : null;
-    await activateByMpPayment({ email, mpPaymentId: String(payment.id), paidAt: new Date() });
+    await activateByMpPayment({
+      email,
+      externalReference: payment.external_reference ?? null,
+      mpPaymentId: String(payment.id),
+      paidAt: new Date(),
+    });
   } catch (err) {
     console.error("[mp webhook]", err);
     await unmarkEvent("MERCADOPAGO", key); // let MP retry

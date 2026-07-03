@@ -148,14 +148,21 @@ export async function cancelStripeSubscription(stripeSubscriptionId: string): Pr
  */
 export async function activateByMpPayment(input: {
   email: string | null;
+  externalReference: string | null;
   mpPaymentId: string;
   paidAt: Date;
 }): Promise<Subscriber | null> {
-  if (!input.email) return null;
-  const sub = await db.subscriber.findFirst({
-    where: { email: input.email },
-    orderBy: { createdAt: "desc" },
-  });
+  // Prefer the reliable external_reference (the subscriber id we set on the MP
+  // preference); fall back to the payer email for legacy static-link payments.
+  let sub = input.externalReference
+    ? await db.subscriber.findUnique({ where: { id: input.externalReference } })
+    : null;
+  if (!sub && input.email) {
+    sub = await db.subscriber.findFirst({
+      where: { email: input.email },
+      orderBy: { createdAt: "desc" },
+    });
+  }
   if (!sub) return null;
   const plan: PlanInterval = sub.plan === "year" ? "year" : "month";
   const granted = await grantRole(sub.discordId);

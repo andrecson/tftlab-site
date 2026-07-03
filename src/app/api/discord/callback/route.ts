@@ -14,6 +14,7 @@ import {
   type PlanInterval,
   type ProviderSlug,
 } from "@/lib/payments/config";
+import { createMpPreference } from "@/lib/payments/mercadopago";
 import { verifyState } from "@/lib/oauth-state";
 import { SITE_URL } from "@/lib/site";
 import { linkPendingSubscriber } from "@/server/subscriptions";
@@ -25,13 +26,23 @@ function fail(req: NextRequest, code: string) {
   return NextResponse.redirect(new URL(`/planos?erro=${code}`, req.nextUrl.origin));
 }
 
+/** BRL amount charged for a one-time MP payment (env-overridable per plan). */
+function mpAmountBRL(plan: PlanInterval): number {
+  const raw =
+    plan === "year" ? process.env.MP_PRICE_YEAR : process.env.MP_PRICE_MONTH;
+  const n = Number(raw);
+  if (Number.isFinite(n) && n > 0) return n;
+  return plan === "year" ? 480 : 80; // defaults — confirme no .env
+}
+
 /** Build the hosted-checkout URL, tagging it so the webhook can attribute it. */
-function checkoutUrl(
+async function checkoutUrl(
   provider: ProviderSlug,
   plan: PlanInterval,
   subscriberId: string,
   email: string | null,
-): string {
+  origin: string,
+): Promise<string> {
   if (provider === "stripe") {
     // Stripe Payment Links echo client_reference_id back in the webhook.
     const url = new URL(STRIPE_LINKS[plan]);
@@ -39,8 +50,18 @@ function checkoutUrl(
     if (email) url.searchParams.set("prefilled_email", email);
     return url.toString();
   }
-  // Mercado Pago short links can't carry a reference → matched by payer email.
-  return MP_LINKS[plan];
+  // Mercado Pago: create a preference carrying external_reference = subscriberId
+  // so the webhook matches on it (not the fragile payer email). Prefills the
+  // Discord email too. Falls back to the static short link if the API call fails.
+  const initPoint = await createMpPreference({
+    accessToken: process.env.MP_ACCESS_TOKEN ?? "",
+    title: `TFTLab ${plan === "year" ? "Anual" : "Mensal"}`,
+    amount: mpAmountBRL(plan),
+    externalReference: subscriberId,
+    payerEmail: email,
+    backUrl: `${origin}/planos?assinatura=ok`,
+  });
+  return initPoint ?? MP_LINKS[plan];
 }
 
 /**
@@ -78,7 +99,8 @@ export async function GET(req: NextRequest) {
     provider,
   });
 
-  const res = NextResponse.redirect(checkoutUrl(state.provider, state.plan, sub.id, email));
+  const checkout = await checkoutUrl(state.provider, state.plan, sub.id, email, origin);
+  const res = NextResponse.redirect(checkout);
   res.cookies.delete("discord_oauth_nonce");
   return res;
 }
