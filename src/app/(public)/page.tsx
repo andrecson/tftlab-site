@@ -49,7 +49,7 @@ export default function HomePage() {
       <Hero />
 
       {/* Free tools — surfaces the merged tier list + builder up front. */}
-      <section id="ferramentas" className="bg-background px-4 py-24">
+      <section id="ferramentas" className="bg-background px-4 py-16 md:py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-14 text-center">
             <h2 className="text-3xl font-black uppercase tracking-tight sm:text-4xl">

@@ -10,7 +10,7 @@ const PERKS = ["Acesso imediato", "7 dias de garantia", "Suporte no WhatsApp"];
 
 export function CtaSection() {
   return (
-    <section className="px-4 py-20">
+    <section className="px-4 py-14 md:py-20">
       <div className="mx-auto max-w-5xl">
         <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-card p-8 text-center md:p-16">
           {/* one restrained cyan glow (atmospheric, like the mentors section) */}

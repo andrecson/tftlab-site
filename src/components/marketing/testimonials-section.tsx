@@ -77,7 +77,7 @@ export function TestimonialsSection() {
   const current = RESULTS[index];
 
   return (
-    <section className="bg-background px-4 py-24">
+    <section className="bg-background px-4 py-16 md:py-24">
       <div className="mx-auto max-w-6xl">
         <div className="mb-14 text-center">
           <h2 className="text-3xl font-black uppercase tracking-tight sm:text-4xl">
@@ -110,7 +110,7 @@ export function TestimonialsSection() {
               type="button"
               onClick={() => go(-1)}
               aria-label="Anterior"
-              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/70 p-2.5 text-white opacity-0 transition-all hover:border-primary/50 focus-visible:opacity-100 group-hover:opacity-100"
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/70 p-2.5 text-white opacity-100 transition-all hover:border-primary/50 focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -118,25 +118,30 @@ export function TestimonialsSection() {
               type="button"
               onClick={() => go(1)}
               aria-label="Próximo"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/70 p-2.5 text-white opacity-0 transition-all hover:border-primary/50 focus-visible:opacity-100 group-hover:opacity-100"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/70 p-2.5 text-white opacity-100 transition-all hover:border-primary/50 focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="mt-8 flex justify-center gap-2">
+          <div className="mt-4 flex justify-center">
             {RESULTS.map((r, i) => (
               <button
                 key={r.url}
                 type="button"
                 onClick={() => setIndex(i)}
                 aria-label={`Ir para o resultado ${i + 1}`}
-                className={`h-2 rounded-full transition-all ${
-                  i === index
-                    ? "w-8 bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
-                    : "w-2 bg-muted hover:bg-muted-foreground/50"
-                }`}
-              />
+                aria-current={i === index ? "true" : undefined}
+                className="group/dot flex h-10 items-center justify-center px-1.5"
+              >
+                <span
+                  className={`block h-2 rounded-full transition-all ${
+                    i === index
+                      ? "w-8 bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.4)]"
+                      : "w-2 bg-muted group-hover/dot:bg-muted-foreground/50"
+                  }`}
+                />
+              </button>
             ))}
           </div>
         </div>

@@ -40,7 +40,7 @@ export function MentorsSection() {
   return (
     <section
       id="mentores"
-      className="relative overflow-hidden bg-background px-4 py-24"
+      className="relative overflow-hidden bg-background px-4 py-16 md:py-24"
     >
       <div className="pointer-events-none absolute right-0 top-0 h-1/3 w-1/3 rounded-full bg-primary/5 blur-[100px]" />
       <div className="pointer-events-none absolute bottom-0 left-0 h-1/3 w-1/3 rounded-full bg-secondary/10 blur-[100px]" />
