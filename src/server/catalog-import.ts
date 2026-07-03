@@ -133,6 +133,18 @@ export async function importCatalog(
     }
   });
 
+  // Establish the current set so the public pages have something to show right
+  // after a fresh import — every public query scopes to `SiteConfig.currentSet`
+  // and returns empty when it's unset. Only for the live channel; a PBE (preview)
+  // import must not flip the live set out from under the site.
+  if (channel === "latest") {
+    await db.siteConfig.upsert({
+      where: { id: 1 },
+      create: { id: 1, currentSet: set },
+      update: { currentSet: set },
+    });
+  }
+
   const [champions, items, traits, augments, championTraits] = await Promise.all(
     [
       db.champion.count({ where: { set } }),
