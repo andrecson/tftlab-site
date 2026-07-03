@@ -6,7 +6,7 @@ import { CHECKOUT_URL } from "@/lib/marketing";
 export const metadata: Metadata = {
   title: "Loja",
   description:
-    "Produtos e serviços do TFTLab — coaching, mentorias e itens da loja oficial.",
+    "Produtos e serviços do TFTLab: coaching, mentorias e itens da loja oficial.",
   alternates: { canonical: "/loja" },
 };
 

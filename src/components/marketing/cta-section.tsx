@@ -2,20 +2,19 @@ import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 
 /**
- * Closing CTA — ported from the old landing. Funnels to the plans page. A soft
- * cyan glow + a bordered glass-ish panel, using our tokens.
+ * Closing CTA — ported from the old landing. Funnels to the plans page. A solid
+ * bordered panel (no glass/gradient, per DESIGN.md) with one restrained cyan
+ * glow, elevated by border + color like the rest of the system.
  */
 const PERKS = ["Acesso imediato", "7 dias de garantia", "Suporte no WhatsApp"];
 
 export function CtaSection() {
   return (
-    <section className="relative overflow-hidden px-4 py-20">
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-secondary/40 via-background to-background" />
-
-      <div className="relative z-10 mx-auto max-w-5xl">
-        <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-card/60 p-8 text-center backdrop-blur md:p-16">
-          {/* glow */}
-          <div className="pointer-events-none absolute -top-32 left-1/2 h-64 w-full max-w-lg -translate-x-1/2 rounded-full bg-primary/20 blur-[100px]" />
+    <section className="px-4 py-20">
+      <div className="mx-auto max-w-5xl">
+        <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-card p-8 text-center md:p-16">
+          {/* one restrained cyan glow (atmospheric, like the mentors section) */}
+          <div className="pointer-events-none absolute -top-32 left-1/2 h-64 w-full max-w-lg -translate-x-1/2 rounded-full bg-primary/10 blur-[100px]" />
 
           <div className="relative">
             <span className="mb-8 inline-block rounded-full bg-primary px-4 py-1 text-sm font-bold uppercase tracking-wider text-primary-foreground">

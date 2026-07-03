@@ -1,4 +1,5 @@
 import { PLANS } from "@/lib/marketing";
+import { PaymentTrust } from "@/components/marketing/payment-trust";
 import { PlanCard } from "@/components/marketing/plan-card";
 
 /**
@@ -23,6 +24,8 @@ export function PlansPreview() {
             <PlanCard key={plan.id} plan={plan} />
           ))}
         </div>
+
+        <PaymentTrust />
       </div>
     </section>
   );

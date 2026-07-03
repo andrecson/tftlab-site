@@ -114,7 +114,7 @@ export function SiteFooter() {
             marcas registradas ou marcas comerciais da Riot Games, Inc.
           </p>
           <p className="mt-4 text-xs text-muted-foreground/70">
-            © {new Date().getFullYear()} TFTLab.br — Todos os direitos reservados.
+            © {new Date().getFullYear()} TFTLab.br. Todos os direitos reservados.
           </p>
         </div>
       </div>

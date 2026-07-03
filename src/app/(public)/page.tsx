@@ -16,7 +16,7 @@ import { TestimonialsSection } from "@/components/marketing/testimonials-section
  * after the hero, then the full coaching landing.
  */
 export const metadata: Metadata = {
-  title: "TFTLab — Coaching, tier lists e guias de Teamfight Tactics",
+  title: "Coaching, tier lists e guias de Teamfight Tactics",
   description:
     "Evolua no Teamfight Tactics com coaching profissional, tier lists atualizadas do patch e guias de especialistas. Aulas semanais e ferramentas grátis (tier list + builder).",
   alternates: { canonical: "/" },
@@ -26,7 +26,7 @@ const TOOLS = [
   {
     href: "/tier-list",
     title: "Tier List",
-    desc: "As comps mais fortes do patch, ranqueadas por tier — com carries, itens e augments.",
+    desc: "As comps mais fortes do patch, ranqueadas por tier, com carries, itens e augments.",
     cta: "Ver tier list",
   },
   {
@@ -34,6 +34,12 @@ const TOOLS = [
     title: "Builder",
     desc: "Monte seu board hexágono a hexágono, defina estrelas e itens, e compartilhe por link.",
     cta: "Abrir builder",
+  },
+  {
+    href: "/tier-list",
+    title: "Guias rápidos",
+    desc: "O passo a passo de cada comp: quando jogar, carries, itens, augments e posicionamento no board.",
+    cta: "Ver guias",
   },
 ] as const;
 
@@ -43,35 +49,41 @@ export default function HomePage() {
       <Hero />
 
       {/* Free tools — surfaces the merged tier list + builder up front. */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
-        <h2 className="text-center text-2xl font-extrabold uppercase tracking-tight sm:text-3xl">
-          Ferramentas <span className="text-primary">grátis</span>
-        </h2>
-        <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-muted-foreground">
-          Domine o meta antes mesmo de assinar — tier list e builder liberados.
-        </p>
-        <div className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-2">
-          {TOOLS.map((item) => (
-            <Link
-              key={item.title}
-              href={item.href}
-              className="group flex flex-col rounded-xl border border-border bg-card p-6 transition-colors hover:border-primary/50"
-            >
-              <h3 className="text-lg font-bold text-foreground">{item.title}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-                {item.desc}
-              </p>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
-                {item.cta}
-                <span
-                  aria-hidden="true"
-                  className="transition-transform group-hover:translate-x-0.5"
-                >
-                  →
+      <section id="ferramentas" className="bg-background px-4 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-14 text-center">
+            <h2 className="text-3xl font-black uppercase tracking-tight sm:text-4xl">
+              Ferramentas <span className="text-primary">grátis</span>
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-lg text-muted-foreground">
+              Domine o meta antes mesmo de assinar. Tier list, guias e builder liberados.
+            </p>
+          </div>
+          <div className="mx-auto grid max-w-5xl gap-4 md:grid-cols-3">
+            {TOOLS.map((item) => (
+              <Link
+                key={item.title}
+                href={item.href}
+                className="group flex flex-col rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/50"
+              >
+                <h3 className="text-lg font-bold text-foreground">
+                  {item.title}
+                </h3>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                  {item.desc}
+                </p>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
+                  {item.cta}
+                  <span
+                    aria-hidden="true"
+                    className="transition-transform group-hover:translate-x-0.5"
+                  >
+                    →
+                  </span>
                 </span>
-              </span>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 

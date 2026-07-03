@@ -21,9 +21,9 @@ const BENEFITS = [
   },
   {
     icon: TrendingUp,
-    title: "Tier lists atualizadas",
+    title: "Análise de meta exclusiva",
     description:
-      "Fique sempre à frente do meta com listas atualizadas a cada patch e análise detalhada.",
+      "Vá além da tier list pública com análises aprofundadas do meta e das mudanças de cada patch, exclusivas para assinantes.",
   },
   {
     icon: BookOpen,

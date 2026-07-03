@@ -59,7 +59,7 @@ export default async function SharedBuilderPage({
           Builder
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Composição compartilhada — edite à vontade e gere um novo link.
+          Composição compartilhada. Edite à vontade e gere um novo link.
         </p>
       </header>
 

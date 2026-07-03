@@ -1,4 +1,4 @@
-import { ChevronDown, HelpCircle } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 /**
  * FAQ — ported from the old landing. Uses native <details> (accessible, no
@@ -32,13 +32,10 @@ export function FaqSection() {
     <section id="faq" className="bg-background px-4 py-24">
       <div className="mx-auto max-w-3xl">
         <div className="mb-14 text-center">
-          <div className="mb-6 inline-flex items-center justify-center rounded-full bg-primary/10 p-3 text-primary">
-            <HelpCircle size={24} />
-          </div>
           <h2 className="text-3xl font-black uppercase tracking-tight sm:text-4xl">
             Perguntas <span className="text-primary">frequentes</span>
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+          <p className="mx-auto mt-3 max-w-xl text-lg text-muted-foreground">
             Tire suas dúvidas sobre o funcionamento do Lab.
           </p>
         </div>

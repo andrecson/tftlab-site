@@ -33,7 +33,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — Tier list de comps de TFT`,
+    default: `${SITE_NAME} · Tier list de comps de TFT`,
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -46,12 +46,12 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     locale: SITE_LOCALE,
     url: SITE_URL,
-    title: `${SITE_NAME} — Tier list de comps de TFT`,
+    title: `${SITE_NAME} · Tier list de comps de TFT`,
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Tier list de comps de TFT`,
+    title: `${SITE_NAME} · Tier list de comps de TFT`,
     description: SITE_DESCRIPTION,
   },
 };

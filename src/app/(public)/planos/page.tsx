@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageHeading } from "@/components/page-heading";
+import { PaymentTrust } from "@/components/marketing/payment-trust";
 import { PlanCard } from "@/components/marketing/plan-card";
 import { PLANS } from "@/lib/marketing";
 
@@ -31,7 +32,7 @@ export default async function PlanosPage({
     <div className="mx-auto max-w-5xl px-4 py-8">
       <PageHeading
         title="Planos"
-        subtitle="Aulas semanais ao vivo, guias exclusivos e comunidade — pra evoluir de verdade."
+        subtitle="Aulas semanais ao vivo, guias exclusivos e comunidade pra evoluir de verdade."
       />
 
       {errorMessage && (
@@ -49,10 +50,12 @@ export default async function PlanosPage({
         ))}
       </div>
 
-      <p className="mx-auto mt-8 max-w-3xl text-center text-xs text-muted-foreground">
-        Pagamento seguro via Mercado Pago (Pix, boleto ou cartão) ou Stripe
-        (cartão). Após confirmar, você vincula seu Discord e recebe o cargo de
-        assinante. Dúvidas? Fale com a gente no WhatsApp.
+      <PaymentTrust />
+
+      <p className="mx-auto mt-3 max-w-3xl text-center text-xs text-muted-foreground">
+        Pix ou boleto pelo Mercado Pago, ou cartão pela Stripe. Após confirmar,
+        você vincula seu Discord e recebe o cargo de assinante. Dúvidas? Fale
+        com a gente no WhatsApp.
       </p>
     </div>
   );

@@ -68,7 +68,7 @@ export const PLANS: Plan[] = [
     description: "Para quem quer experimentar a plataforma e evoluir agora.",
     features: [
       "Acesso a todas as aulas ao vivo",
-      "Tier lists atualizadas",
+      "Análise de meta exclusiva",
       "Guias avançados exclusivos",
       "Comunidade no Discord",
       "Gravações das aulas passadas",
@@ -85,7 +85,7 @@ export const PLANS: Plan[] = [
     promoText: "Preço promocional de lançamento",
     features: [
       "Acesso a todas as aulas ao vivo",
-      "Tier lists atualizadas",
+      "Análise de meta exclusiva",
       "Guias avançados exclusivos",
       "Comunidade no Discord",
       "Gravações das aulas passadas",

@@ -179,8 +179,8 @@ export async function generateMetadata({
 
   const tierLabel = TIER_META[comp.tier].label;
   const patch = compPatchVersion(comp);
-  const title = `${comp.name} — ${tierLabel}`;
-  const ogTitle = `${comp.name} — ${tierLabel} · TFT ${comp.set} (patch ${patch})`;
+  const title = `${comp.name} · ${tierLabel}`;
+  const ogTitle = `${comp.name} · ${tierLabel} · TFT ${comp.set} (patch ${patch})`;
   const description = buildCompDescription(comp);
   const canonical = `/comps/${comp.slug}`;
 
@@ -221,7 +221,7 @@ export default async function CompDetailPage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: `${comp.name} — ${TIER_META[comp.tier].label}`,
+    headline: `${comp.name} · ${TIER_META[comp.tier].label}`,
     description: buildCompDescription(comp),
     inLanguage: "pt-BR",
     about: "Teamfight Tactics",

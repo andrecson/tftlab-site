@@ -50,8 +50,28 @@ export function TestimonialsSection() {
   );
 
   useEffect(() => {
-    const timer = setInterval(() => go(1), 6000);
-    return () => clearInterval(timer);
+    // No auto-advance for users who prefer reduced motion.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      timer ??= setInterval(() => go(1), 6000);
+    };
+    const stop = () => {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    // Pause while the tab is hidden (timers throttle but don't stop otherwise).
+    const onVisibility = () => (document.hidden ? stop() : start());
+
+    start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [go]);
 
   const current = RESULTS[index];
@@ -74,7 +94,7 @@ export function TestimonialsSection() {
               <Image
                 key={current.url}
                 src={current.url}
-                alt={`${current.name} — ${current.rank}`}
+                alt={`${current.name} · ${current.rank}`}
                 fill
                 sizes="(max-width: 768px) 100vw, 900px"
                 className="object-contain"

@@ -6,7 +6,7 @@ import { MP_LINKS, STRIPE_LINKS, WHATSAPP_URL, type Plan } from "@/lib/marketing
 
 /**
  * Subscribe CTA for a plan. Both payment methods are hosted Payment Links —
- * Mercado Pago (mpago.la, Pix/boleto/cartão) and Stripe (buy.stripe.com, cartão).
+ * Mercado Pago (mpago.la, Pix/boleto) and Stripe (buy.stripe.com, cartão).
  * The site just links out; the bot grants the Discord role via each provider's
  * webhook. Falls back to WhatsApp if no link is configured.
  */
@@ -56,7 +56,7 @@ export function SubscribeButton({ plan }: { plan: Plan }) {
           href={`/api/discord/login?provider=mp&plan=${plan.interval}`}
           className="flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wide text-primary-foreground shadow-[0_0_16px_hsl(var(--primary)/0.4)] transition-opacity hover:opacity-90"
         >
-          Pix · boleto · cartão
+          Pix · boleto
         </a>
       )}
       {stripeLink && (

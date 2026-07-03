@@ -25,6 +25,12 @@ export function Hero() {
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 text-center">
+        {/* The logo image carries the visual title; this gives the page a real,
+            single <h1> for SEO + screen readers. */}
+        <h1 className="sr-only">
+          TFTLab: coaching, tier lists e guias de Teamfight Tactics
+        </h1>
+
         <span className="mb-6 inline-block rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-bold uppercase tracking-wider text-primary">
           Aprenda com os melhores
         </span>
@@ -41,8 +47,8 @@ export function Hero() {
 
         <p className="mb-10 max-w-3xl text-lg leading-relaxed text-muted-foreground sm:text-xl lg:text-2xl">
           Ambiente completo para melhorar seu gameplay e dominar o jogo. Aulas
-          semanais, tier lists atualizadas e guias de especialistas
-          internacionais.
+          semanais, tier lists atualizadas e guias de especialistas com
+          experiência internacional.
         </p>
 
         <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
@@ -50,7 +56,7 @@ export function Hero() {
             href="/planos"
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-8 py-4 text-lg font-black uppercase tracking-wide text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.5)] transition-all hover:shadow-[0_0_30px_hsl(var(--primary)/0.7)] sm:w-auto"
           >
-            Entrar no Laboratório
+            Entrar no laboratório
             <span aria-hidden="true">→</span>
           </Link>
           <Link

@@ -26,7 +26,7 @@ const VALUES = [
     icon: Trophy,
     title: "Excelência",
     description:
-      "Apoiado por profissionais internacionais e jogadores de alto nível que trazem estratégias comprovadas e anos de experiência competitiva.",
+      "Apoiado por profissionais com experiência internacional e jogadores de alto nível que trazem estratégias comprovadas e anos de experiência competitiva.",
   },
 ] as const;
 
@@ -40,7 +40,7 @@ export default function SobrePage() {
         </h1>
         <p className="mx-auto mt-5 text-lg leading-relaxed text-muted-foreground">
           Ajudamos jogadores de TFT a alcançar a maestria através de coaching
-          profissional, recursos completos e uma comunidade de apoio — além de
+          profissional, recursos completos e uma comunidade de apoio, além de
           ferramentas grátis (tier list e builder) para dominar o meta.
         </p>
       </div>
@@ -75,9 +75,9 @@ export default function SobrePage() {
         </h2>
         <p className="mx-auto mt-6 max-w-4xl text-lg leading-relaxed text-muted-foreground">
           Combinamos experiência profissional com atenção personalizada. Nossos
-          mentores internacionais competiram nos níveis mais altos e, com aulas
-          ao vivo semanais e conteúdo sempre atualizado, entregamos tudo o que
-          você precisa para elevar o seu jogo.
+          mentores têm experiência internacional, competiram nos níveis mais
+          altos e, com aulas ao vivo semanais e conteúdo sempre atualizado,
+          entregamos tudo o que você precisa para elevar o seu jogo.
         </p>
         <Link
           href="/planos"

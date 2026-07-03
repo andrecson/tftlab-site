@@ -21,8 +21,8 @@ const MENTORS = [
     ],
   },
   {
-    name: "Koala Esbelto",
-    title: "Analista",
+    name: "Koala",
+    title: "Analista Expert",
     image:
       "https://horizons-cdn.hostinger.com/19cde671-22fd-4608-ac32-02401b7a276e/7c0285009f3ab492b091a37a3044ef72.jpg",
     objectPosition: "center 20%",
