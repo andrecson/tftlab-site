@@ -5,8 +5,8 @@ import { fetchTeamPlannerData } from "@/server/ddragon";
 import { getCurrentSet } from "@/server/queries/config";
 
 export interface TeamPlannerCodes {
-  /** apiId (== character_id) → 2-hex code, for the current set. */
-  codes: Record<string, string>;
+  /** apiId (== character_id) → team_planner_code, for the current set. */
+  codes: Record<string, number>;
   /** Set token used as the code suffix (e.g. "TFTSet17"); "" when unavailable. */
   set: string;
 }

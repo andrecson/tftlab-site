@@ -87,8 +87,8 @@ export function Builder({
   initialAugments?: string[];
   /** Max augments selectable (default MAX_AUGMENTS; pass Infinity for unlimited). */
   maxAugments?: number;
-  /** apiId → 2-hex code for the in-game Team Planner export (see lib/team-planner). */
-  teamPlannerCodes?: Record<string, string>;
+  /** apiId → team_planner_code for the in-game Team Planner export (see lib/team-planner). */
+  teamPlannerCodes?: Record<string, number>;
   /** Set token suffix for the team-planner code (e.g. "TFTSet17"); "" disables it. */
   teamPlannerSet?: string;
   /**

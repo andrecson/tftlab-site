@@ -39,13 +39,16 @@ export const CDRAGON_TEAMPLANNER_URL =
   "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/tftchampions-teamplanner.json";
 
 export async function fetchTeamPlannerData(): Promise<
-  Record<string, { character_id: string }[]>
+  Record<string, { character_id: string; team_planner_code: number }[]>
 > {
   const res = await fetch(CDRAGON_TEAMPLANNER_URL);
   if (!res.ok) {
     throw new Error(`Team planner fetch failed: ${res.status} ${res.statusText}`);
   }
-  return (await res.json()) as Record<string, { character_id: string }[]>;
+  return (await res.json()) as Record<
+    string,
+    { character_id: string; team_planner_code: number }[]
+  >;
 }
 
 export type ItemTypeName =

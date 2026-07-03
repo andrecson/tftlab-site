@@ -1,67 +1,79 @@
 /**
- * TFT in-game Team Planner export code.
+ * TFT in-game Team Planner export code (paste into the game's Team Planner).
  *
- * Format (community-documented): `01` + one 2-hex value per champion + the set
- * token (e.g. `TFTSet17`). Each champion's value is its 1-based index in the
- * set's team-planner champion list, sorted alphabetically by `character_id`.
- * The index is computed over the OFFICIAL team-planner list (whose
- * `character_id` equals the app's champion `apiId`), so it matches the game's
- * ordering exactly — including any non-selectable/PvE entries, which the game
- * still counts in the ordering.
+ * Format (reverse-engineered and validated against a real code): a `02` header
+ * byte, then TEN 12-bit champion slots packed big-endian (empty slots = 0), then
+ * the set token (e.g. `TFTSet17`). Each slot holds the champion's
+ * `team_planner_code` from Community Dragon's `tftchampions-teamplanner.json`.
+ * Champions are sorted by `character_id` (== the app's champion `apiId`) to match
+ * the game's own ordering.
  *
- * NOTE: reverse-engineered from community sources; validate one generated code
- * in the actual game before relying on it.
- * Refs: gist.github.com/bangingheads/243e396f78be1a4d49dc0577abf57a0b
+ * Golden example — Aatrox(29) + Briar(14) + Caitlyn(27) + Cho'Gath(69), Set 17:
+ *   0201d00e01b045000000000000000000TFTSet17
  */
 
-/** The in-game team planner holds up to 10 champions. */
+/** Fixed number of 12-bit champion slots in a team-planner code. */
 export const TEAM_PLANNER_MAX = 10;
+const SLOT_BITS = 12;
+const HEADER = "02";
 
 export interface TeamPlannerEntry {
   character_id: string;
+  team_planner_code: number;
 }
 
-/**
- * Build the `apiId` (== `character_id`) → 2-hex-code map for a set from its
- * team-planner entries: sort by `character_id`, assign 1-based hex indices.
- * Pure, so it can be unit-tested with a fixture.
- */
+/** apiId (== character_id) → team_planner_code (the game's per-set champion id). */
 export function teamPlannerCodeMap(
   entries: TeamPlannerEntry[],
-): Record<string, string> {
-  const sorted = [...entries]
-    .filter(
-      (e) => typeof e.character_id === "string" && e.character_id.length > 0,
-    )
-    .sort((a, b) => a.character_id.localeCompare(b.character_id));
-
-  const map: Record<string, string> = {};
-  sorted.forEach((entry, i) => {
-    map[entry.character_id] = (i + 1)
-      .toString(16)
-      .toUpperCase()
-      .padStart(2, "0");
-  });
+): Record<string, number> {
+  const map: Record<string, number> = {};
+  for (const entry of entries) {
+    if (
+      typeof entry.character_id === "string" &&
+      typeof entry.team_planner_code === "number"
+    ) {
+      map[entry.character_id] = entry.team_planner_code;
+    }
+  }
   return map;
+}
+
+/** Pack up to TEAM_PLANNER_MAX 12-bit values (big-endian), zero-padded, to hex. */
+function packSlots(values: number[]): string {
+  const slots = values.slice(0, TEAM_PLANNER_MAX);
+  while (slots.length < TEAM_PLANNER_MAX) slots.push(0);
+
+  let bits = "";
+  for (const value of slots) {
+    bits += (value & 0xfff).toString(2).padStart(SLOT_BITS, "0");
+  }
+
+  let hex = "";
+  for (let i = 0; i < bits.length; i += 8) {
+    hex += parseInt(bits.slice(i, i + 8), 2)
+      .toString(16)
+      .padStart(2, "0");
+  }
+  return hex;
 }
 
 export interface TeamPlannerCodeResult {
   /** The paste-into-game code, or null when no champion could be encoded. */
   code: string | null;
-  /** apiIds that had no team-planner code (excluded from the code). */
+  /** apiIds that had no (valid, non-zero) team-planner code. */
   missing: string[];
   /** True when the champion list was capped to TEAM_PLANNER_MAX. */
   truncated: boolean;
 }
 
 /**
- * Assemble the team-planner code for a set of champion apiIds. De-dupes
- * champions (the planner holds each once), caps at TEAM_PLANNER_MAX, and reports
- * any apiIds that lacked a code.
+ * Build the team-planner code for a set of champion apiIds. De-dupes, sorts by
+ * character_id (to match the game), caps at TEAM_PLANNER_MAX, and reports any
+ * apiIds lacking a code.
  */
 export function buildTeamPlannerCode(
   apiIds: string[],
-  codesByApiId: Record<string, string>,
+  codesByApiId: Record<string, number>,
   set: string,
 ): TeamPlannerCodeResult {
   const seen = new Set<string>();
@@ -72,18 +84,22 @@ export function buildTeamPlannerCode(
       unique.push(apiId);
     }
   }
+  // Sort by character_id (the apiId) to match how the game orders the slots.
+  unique.sort((a, b) => a.localeCompare(b));
 
   const truncated = unique.length > TEAM_PLANNER_MAX;
   const capped = unique.slice(0, TEAM_PLANNER_MAX);
 
-  const hexes: string[] = [];
+  const values: number[] = [];
   const missing: string[] = [];
   for (const apiId of capped) {
-    const hex = codesByApiId[apiId];
-    if (hex) hexes.push(hex);
+    const code = codesByApiId[apiId];
+    if (typeof code === "number" && code > 0) values.push(code);
     else missing.push(apiId);
   }
 
-  const code = set && hexes.length > 0 ? `01${hexes.join("")}${set}` : null;
-  return { code, missing, truncated };
+  if (!set || values.length === 0) {
+    return { code: null, missing, truncated };
+  }
+  return { code: `${HEADER}${packSlots(values)}${set}`, missing, truncated };
 }

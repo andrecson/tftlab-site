@@ -7,82 +7,85 @@ import {
   TEAM_PLANNER_MAX,
 } from "./team-planner";
 
-test("teamPlannerCodeMap sorts by character_id and assigns 1-based hex", () => {
+// Real Set 17 team_planner_code values.
+const CODES: Record<string, number> = {
+  TFT17_Aatrox: 29,
+  TFT17_Briar: 14,
+  TFT17_Caitlyn: 27,
+  TFT17_Chogath: 69,
+};
+
+test("teamPlannerCodeMap keeps character_id -> team_planner_code", () => {
   const map = teamPlannerCodeMap([
-    { character_id: "TFT17_Zed" },
-    { character_id: "TFT17_Aatrox" },
-    { character_id: "TFT17_Akali" },
+    { character_id: "TFT17_Aatrox", team_planner_code: 29 },
+    { character_id: "TFT17_Briar", team_planner_code: 14 },
   ]);
-  assert.equal(map["TFT17_Aatrox"], "01");
-  assert.equal(map["TFT17_Akali"], "02");
-  assert.equal(map["TFT17_Zed"], "03");
+  assert.equal(map["TFT17_Aatrox"], 29);
+  assert.equal(map["TFT17_Briar"], 14);
 });
 
-test("teamPlannerCodeMap pads to 2 hex and goes past 0x0F correctly", () => {
-  const entries = Array.from({ length: 16 }, (_, i) => ({
-    character_id: `TFT17_${String(i).padStart(2, "0")}`,
-  }));
-  const map = teamPlannerCodeMap(entries);
-  assert.equal(map["TFT17_00"], "01");
-  assert.equal(map["TFT17_09"], "0A"); // 10th -> 0A
-  assert.equal(map["TFT17_15"], "10"); // 16th -> 10
-});
-
-test("teamPlannerCodeMap ignores enemy-unit inclusion only via sort position", () => {
-  // TFT17_Enemy_Aatrox sorts after TFT17_Aatrox (A < E) and shifts later champs.
-  const map = teamPlannerCodeMap([
-    { character_id: "TFT17_Aatrox" },
-    { character_id: "TFT17_Enemy_Aatrox" },
-    { character_id: "TFT17_Zed" },
-  ]);
-  assert.equal(map["TFT17_Aatrox"], "01");
-  assert.equal(map["TFT17_Enemy_Aatrox"], "02");
-  assert.equal(map["TFT17_Zed"], "03");
-});
-
-const CODES = { TFT17_Aatrox: "01", TFT17_Akali: "02", TFT17_Zed: "0A" };
-
-test("buildTeamPlannerCode wraps 01 + hexes + set", () => {
+test("GOLDEN: Aatrox+Caitlyn+Briar+Chogath matches the real game code", () => {
+  // pass them out of order to prove the sort-by-character_id.
   const r = buildTeamPlannerCode(
-    ["TFT17_Aatrox", "TFT17_Akali", "TFT17_Zed"],
+    ["TFT17_Caitlyn", "TFT17_Aatrox", "TFT17_Chogath", "TFT17_Briar"],
     CODES,
     "TFTSet17",
   );
-  assert.equal(r.code, "01" + "01" + "02" + "0A" + "TFTSet17");
+  assert.equal(r.code, "0201d00e01b045000000000000000000TFTSet17");
   assert.deepEqual(r.missing, []);
   assert.equal(r.truncated, false);
 });
 
+test("code = 02 + 30 hex (10 slots x 12 bit) + set token", () => {
+  const r = buildTeamPlannerCode(["TFT17_Aatrox"], CODES, "TFTSet17");
+  // header(2) + 15 bytes*2 + "TFTSet17"
+  assert.equal(r.code!.length, 2 + 30 + "TFTSet17".length);
+  assert.ok(r.code!.startsWith("02"));
+  assert.ok(r.code!.endsWith("TFTSet17"));
+});
+
+test("12-bit slot packing handles values above 0xFF", () => {
+  // 0xABC = 2748 in slot 1, 0x001 in slot 2 -> big-endian nibbles ABC 001 ...
+  const r = buildTeamPlannerCode(["Z", "A"], { A: 0xabc, Z: 0x001 }, "S");
+  // sorted: A(ABC) then Z(001) -> 1010 1011 1100 | 0000 0000 0001 | zeros
+  assert.equal(r.code!.slice(2, 8), "abc001");
+});
+
 test("buildTeamPlannerCode de-dupes champions", () => {
-  const r = buildTeamPlannerCode(
-    ["TFT17_Aatrox", "TFT17_Aatrox", "TFT17_Akali"],
+  const r1 = buildTeamPlannerCode(
+    ["TFT17_Aatrox", "TFT17_Aatrox", "TFT17_Briar"],
     CODES,
     "TFTSet17",
   );
-  assert.equal(r.code, "01" + "01" + "02" + "TFTSet17");
-});
-
-test("buildTeamPlannerCode reports missing codes and still encodes the rest", () => {
-  const r = buildTeamPlannerCode(
-    ["TFT17_Aatrox", "TFT17_Unknown"],
+  const r2 = buildTeamPlannerCode(
+    ["TFT17_Aatrox", "TFT17_Briar"],
     CODES,
     "TFTSet17",
   );
-  assert.equal(r.code, "01" + "01" + "TFTSet17");
-  assert.deepEqual(r.missing, ["TFT17_Unknown"]);
+  assert.equal(r1.code, r2.code);
 });
 
-test("buildTeamPlannerCode returns null when nothing encodable / no set", () => {
+test("missing / zero codes are excluded and reported", () => {
+  const r = buildTeamPlannerCode(
+    ["TFT17_Aatrox", "TFT17_Unknown", "TFT17_Zero"],
+    { ...CODES, TFT17_Zero: 0 },
+    "TFTSet17",
+  );
+  assert.deepEqual(r.missing.sort(), ["TFT17_Unknown", "TFT17_Zero"]);
+  // only Aatrox encoded
+  assert.equal(r.code, buildTeamPlannerCode(["TFT17_Aatrox"], CODES, "TFTSet17").code);
+});
+
+test("null when nothing encodable or no set", () => {
   assert.equal(buildTeamPlannerCode([], CODES, "TFTSet17").code, null);
-  assert.equal(buildTeamPlannerCode(["TFT17_X"], {}, "TFTSet17").code, null);
+  assert.equal(buildTeamPlannerCode(["X"], {}, "TFTSet17").code, null);
   assert.equal(buildTeamPlannerCode(["TFT17_Aatrox"], CODES, "").code, null);
 });
 
-test("buildTeamPlannerCode caps at TEAM_PLANNER_MAX", () => {
-  const many = Array.from({ length: 14 }, (_, i) => `C${i}`);
-  const codes = Object.fromEntries(many.map((id, i) => [id, (i + 1).toString(16).padStart(2, "0").toUpperCase()]));
-  const r = buildTeamPlannerCode(many, codes, "TFTSet17");
+test("caps at TEAM_PLANNER_MAX champions", () => {
+  const ids = Array.from({ length: 13 }, (_, i) => `C${String(i).padStart(2, "0")}`);
+  const codes = Object.fromEntries(ids.map((id, i) => [id, i + 1]));
+  const r = buildTeamPlannerCode(ids, codes, "TFTSet17");
   assert.equal(r.truncated, true);
-  // 01 + 10 champs * 2 hex + set
-  assert.equal(r.code!.length, 2 + TEAM_PLANNER_MAX * 2 + "TFTSet17".length);
+  assert.equal(r.code!.length, 2 + 30 + "TFTSet17".length); // always 10 slots
 });
