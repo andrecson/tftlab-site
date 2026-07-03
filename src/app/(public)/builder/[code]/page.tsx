@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Builder } from "@/components/builder/builder";
 import { decodeBoard, toPlacedUnits } from "@/lib/board-code";
 import { getBuilderCatalog } from "@/server/queries/builder-catalog";
+import { getTeamPlannerCodes } from "@/server/queries/team-planner";
 
 /**
  * Shared builder page (US-028) — served at `/builder/[code]`.
@@ -33,7 +34,8 @@ export default async function SharedBuilderPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const { champions, traits, items, augments } = await getBuilderCatalog();
+  const [{ champions, traits, items, augments }, teamPlanner] =
+    await Promise.all([getBuilderCatalog(), getTeamPlannerCodes()]);
 
   const decoded = decodeBoard(decodeURIComponent(code));
 
@@ -70,6 +72,8 @@ export default async function SharedBuilderPage({
         augments={augments}
         initialUnits={initialUnits}
         initialAugments={initialAugments}
+        teamPlannerCodes={teamPlanner.codes}
+        teamPlannerSet={teamPlanner.set}
       />
     </div>
   );

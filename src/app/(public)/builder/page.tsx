@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Builder } from "@/components/builder/builder";
 import { PageHeading } from "@/components/page-heading";
 import { getBuilderCatalog } from "@/server/queries/builder-catalog";
+import { getTeamPlannerCodes } from "@/server/queries/team-planner";
 
 /**
  * Public builder page (US-025) — served at `/builder`.
@@ -24,7 +25,8 @@ export const metadata: Metadata = {
 };
 
 export default async function BuilderPage() {
-  const { champions, traits, items, augments } = await getBuilderCatalog();
+  const [{ champions, traits, items, augments }, teamPlanner] =
+    await Promise.all([getBuilderCatalog(), getTeamPlannerCodes()]);
 
   return (
     <div className="mx-auto max-w-[88rem] px-4 py-8">
@@ -38,6 +40,8 @@ export default async function BuilderPage() {
         traits={traits}
         items={items}
         augments={augments}
+        teamPlannerCodes={teamPlanner.codes}
+        teamPlannerSet={teamPlanner.set}
       />
     </div>
   );

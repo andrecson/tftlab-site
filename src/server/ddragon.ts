@@ -31,6 +31,23 @@ function cdragonGameAssetBase(channel: CdragonChannel = "latest"): string {
 /** Back-compat: the live (latest) TFT data URL. */
 export const CDRAGON_TFT_DATA_URL = cdragonTftDataUrl("latest");
 
+/**
+ * Official TFT team-planner champion list (keyed by set token, e.g. "TFTSet17").
+ * Used to derive the in-game team-planner export codes (see src/lib/team-planner).
+ */
+export const CDRAGON_TEAMPLANNER_URL =
+  "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/tftchampions-teamplanner.json";
+
+export async function fetchTeamPlannerData(): Promise<
+  Record<string, { character_id: string }[]>
+> {
+  const res = await fetch(CDRAGON_TEAMPLANNER_URL);
+  if (!res.ok) {
+    throw new Error(`Team planner fetch failed: ${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as Record<string, { character_id: string }[]>;
+}
+
 export type ItemTypeName =
   | "COMPONENT"
   | "COMPLETED"

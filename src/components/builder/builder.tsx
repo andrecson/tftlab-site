@@ -21,6 +21,7 @@ import {
   toggleAugment,
 } from "@/lib/builder";
 import type { PlacedUnit } from "@/lib/builder";
+import { buildTeamPlannerCode } from "@/lib/team-planner";
 import { computeSynergies } from "@/lib/synergy";
 import type { SynergyUnit, TraitInfo } from "@/lib/synergy";
 import type {
@@ -74,6 +75,8 @@ export function Builder({
   initialUnits = [],
   initialAugments = [],
   maxAugments = MAX_AUGMENTS,
+  teamPlannerCodes,
+  teamPlannerSet,
   onSave,
 }: {
   champions: BuilderChampion[];
@@ -84,6 +87,10 @@ export function Builder({
   initialAugments?: string[];
   /** Max augments selectable (default MAX_AUGMENTS; pass Infinity for unlimited). */
   maxAugments?: number;
+  /** apiId → 2-hex code for the in-game Team Planner export (see lib/team-planner). */
+  teamPlannerCodes?: Record<string, string>;
+  /** Set token suffix for the team-planner code (e.g. "TFTSet17"); "" disables it. */
+  teamPlannerSet?: string;
   /**
    * When provided, the builder runs in admin save mode (US-037): it persists the
    * board through this callback instead of mirroring it into the URL. Receives
@@ -108,6 +115,8 @@ export function Builder({
     useState<string[]>(initialAugments);
   // Transient "Link copiado!" toast state for the share button.
   const [copied, setCopied] = useState(false);
+  // Transient "Código copiado!" toast for the in-game team-planner export.
+  const [gameCodeCopied, setGameCodeCopied] = useState(false);
   // Admin save mode (US-037): in-flight + result feedback for "Salvar board".
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -208,6 +217,13 @@ export function Builder({
     return () => clearTimeout(timer);
   }, [copied]);
 
+  // Auto-clear the "Código copiado!" toast.
+  useEffect(() => {
+    if (!gameCodeCopied) return;
+    const timer = setTimeout(() => setGameCodeCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [gameCodeCopied]);
+
   // Auto-clear the "Board salvo" confirmation (US-037).
   useEffect(() => {
     if (!savedOk) return;
@@ -226,6 +242,25 @@ export function Builder({
       // the address bar already reflects the board, so copying it still works.
     }
   }, [sharePath]);
+
+  // In-game Team Planner export code for the current board (see lib/team-planner).
+  const gameCode = useMemo(() => {
+    if (!teamPlannerSet) return null;
+    const apiIds = units
+      .map((unit) => championsById.get(unit.championId)?.apiId)
+      .filter((id): id is string => Boolean(id));
+    return buildTeamPlannerCode(apiIds, teamPlannerCodes ?? {}, teamPlannerSet);
+  }, [championsById, teamPlannerCodes, teamPlannerSet, units]);
+
+  const copyGameCode = useCallback(async () => {
+    if (!gameCode?.code || typeof window === "undefined") return;
+    try {
+      await navigator.clipboard.writeText(gameCode.code);
+      setGameCodeCopied(true);
+    } catch {
+      // Clipboard can be blocked (insecure context / denied permission).
+    }
+  }, [gameCode]);
 
   // Push a new board snapshot, discarding any redo branch ahead of the cursor.
   const commit = useCallback(
@@ -553,14 +588,27 @@ export function Builder({
               {saving ? "Salvando…" : "Salvar board"}
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={copyLink}
-              aria-label="Copiar link do time"
-              className={TOOLBAR_BUTTON}
-            >
-              {copied ? "Link copiado!" : "Copiar link"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={copyLink}
+                aria-label="Copiar link do time"
+                className={TOOLBAR_BUTTON}
+              >
+                {copied ? "Link copiado!" : "Copiar link"}
+              </button>
+              {gameCode?.code ? (
+                <button
+                  type="button"
+                  onClick={copyGameCode}
+                  aria-label="Copiar código para o Team Planner do jogo"
+                  title="Cole no Planejador de Equipes do TFT (Team Planner)"
+                  className={TOOLBAR_BUTTON}
+                >
+                  {gameCodeCopied ? "Código copiado!" : "Código do jogo"}
+                </button>
+              ) : null}
+            </>
           )}
 
           {selectedUnit ? (
