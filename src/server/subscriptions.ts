@@ -1,6 +1,7 @@
 import type { PaymentProvider, Subscriber } from "@prisma/client";
 
 import { grantRole, revokeRole } from "@/lib/discord";
+import { sendPaymentConfirmationEmail } from "@/lib/email";
 import { oneTimePeriodEnd, type PlanInterval } from "@/lib/payments/config";
 import { db } from "@/server/db";
 
@@ -94,6 +95,11 @@ export async function activateByStripeCheckout(input: {
       roleGranted: granted,
     },
   });
+  // Best-effort confirmation email (no-ops if SMTP isn't configured; the send
+  // helper never throws, so it can't break the webhook).
+  if (sub.email) {
+    await sendPaymentConfirmationEmail({ to: sub.email, plan: sub.plan });
+  }
 }
 
 /**
@@ -153,7 +159,7 @@ export async function activateByMpPayment(input: {
   if (!sub) return null;
   const plan: PlanInterval = sub.plan === "year" ? "year" : "month";
   const granted = await grantRole(sub.discordId);
-  return db.subscriber.update({
+  const updated = await db.subscriber.update({
     where: { id: sub.id },
     data: {
       status: "ACTIVE",
@@ -163,6 +169,11 @@ export async function activateByMpPayment(input: {
       roleGranted: granted,
     },
   });
+  // Best-effort confirmation email (no-ops without SMTP; never throws).
+  if (updated.email) {
+    await sendPaymentConfirmationEmail({ to: updated.email, plan });
+  }
+  return updated;
 }
 
 /**

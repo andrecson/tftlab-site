@@ -2,6 +2,7 @@
 
 import { requireRole } from "@/auth";
 import { grantRole, revokeRole } from "@/lib/discord";
+import { emailConfigured, sendTestEmail } from "@/lib/email";
 import { isPlanInterval, oneTimePeriodEnd } from "@/lib/payments/config";
 import { db } from "@/server/db";
 
@@ -136,6 +137,29 @@ export async function grantByDiscordId(
       error:
         "Assinante salvo, mas o cargo não foi concedido. Confira as chaves do Discord e se o usuário está no servidor.",
     };
+  }
+  return { ok: true };
+}
+
+/** Send a test email so a curator can verify the SMTP config from the admin. */
+export async function sendTestEmailAction(
+  to: string,
+): Promise<SubscriberActionResult> {
+  await requireRole("EDITOR");
+  const address = (to ?? "").trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) {
+    return { ok: false, error: "Email inválido." };
+  }
+  if (!emailConfigured()) {
+    return {
+      ok: false,
+      error:
+        "SMTP não configurado. Preencha SMTP_HOST / SMTP_USER / SMTP_PASS / SMTP_FROM no .env.",
+    };
+  }
+  const sent = await sendTestEmail(address);
+  if (!sent) {
+    return { ok: false, error: "Falha ao enviar. Confira as credenciais SMTP." };
   }
   return { ok: true };
 }

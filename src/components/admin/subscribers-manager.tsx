@@ -9,6 +9,7 @@ import {
   grantByDiscordId,
   grantSubscriber,
   revokeSubscriber,
+  sendTestEmailAction,
   setSubscriberExpiry,
   type SubscriberActionResult,
 } from "@/actions/subscribers";
@@ -58,6 +59,8 @@ export function SubscribersManager({
   // Manual-comp form.
   const [newDiscordId, setNewDiscordId] = useState("");
   const [newPlan, setNewPlan] = useState("month");
+  // SMTP test form.
+  const [testEmail, setTestEmail] = useState("");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -136,6 +139,40 @@ export function SubscribersManager({
           O membro precisa já estar no servidor do Discord. Isso concede o cargo e
           registra a assinatura.
         </p>
+      </form>
+
+      {/* SMTP test */}
+      <form
+        className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card/40 p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void run(
+            "test-email",
+            () => sendTestEmailAction(testEmail),
+            "Email de teste enviado.",
+          );
+        }}
+      >
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Testar SMTP (enviar email de teste)
+          </label>
+          <input
+            type="email"
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            placeholder="seu@email.com"
+            aria-label="Email para teste"
+            className={`w-56 ${inputClass} placeholder:text-muted-foreground`}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={pending !== null || !testEmail.trim()}
+          className="rounded-md border border-border px-4 py-1.5 text-sm font-semibold text-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {pending === "test-email" ? "Enviando…" : "Enviar teste"}
+        </button>
       </form>
 
       {/* Filters */}
