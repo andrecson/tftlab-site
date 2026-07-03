@@ -23,7 +23,8 @@ Estratégia: **Restrained** (neutros + 1 acento). Ciano nunca como decoração d
 
 ## Components
 - **Hexágono** (`BUILDER_HEX_CLIP`, pointy-top): unidade visual compartilhada — board do builder, board dos guias e capa das comps na tier list. Aro na cor do tier; poço interno escuro `#0a1322`.
-- **Tier badge**: quadrado colorido, letra grande, sub-label ("TIER"/"SITUAC."), colchetes decorativos nos cantos.
+- **Tier (tier list)**: faixa/cabeçalho por banda — barra colorida (`bg-tier-*`) no topo com a letra + rótulo "Tier", sobre um painel `bg-card` de borda neutra com as comps. A cor concentra na faixa e no aro dos hexágonos; elevação por borda, não por bloco colorido em volta.
+- **Tier badge (comp detail)**: quadrado colorido com a letra + sub-label ("TIER") e colchetes decorativos nos cantos (`comp-header.tsx`). Ainda no estilo antigo — não segue a faixa do tier list.
 - **Abas** (painel de itens): ativa = pill sólida ciano (`bg-primary text-primary-foreground`); inativas = texto puro.
 - Estados obrigatórios em botões/inputs: default · hover · focus (anel ciano `ring-ring`) · active · disabled.
 - Estrelas de campeão: 2–3 (1★ não existe).

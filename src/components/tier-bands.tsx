@@ -24,29 +24,25 @@ export function TierBands({ groups, currentPatchId }: TierBandsProps) {
           <section
             key={tier}
             aria-label={meta.label}
-            className="flex items-stretch gap-3"
+            className="overflow-hidden rounded-xl border border-border bg-card"
           >
-            {/* Tier badge — big colored square with the letter + a full
-                continuous outline, in the TFTLab tier colors. */}
+            {/* Tier header strip — colored band with the letter + label. */}
             <div
-              className={`relative flex min-h-[4.25rem] w-[4.25rem] shrink-0 flex-col items-center justify-center rounded-lg text-background ${meta.chipClass} sm:w-[5.25rem]`}
+              className={`flex items-center gap-2 px-4 py-1.5 ${meta.chipClass}`}
             >
-              <span className="pointer-events-none absolute inset-1.5 rounded-[0.35rem] border-2 border-background/50" />
               <span
-                className="text-4xl font-extrabold leading-none sm:text-5xl"
+                className="text-xl font-black leading-none text-background"
                 aria-hidden="true"
               >
                 {tier}
               </span>
-              <span className="mt-1 text-[9px] font-bold uppercase tracking-widest">
-                {meta.badgeSub}
+              <span className="text-[11px] font-bold uppercase tracking-widest text-background/80">
+                Tier
               </span>
             </div>
 
-            {/* Comps container — tier-colored border holding the hexagons. */}
-            <div
-              className={`flex flex-1 items-center rounded-xl border-2 bg-card px-3 py-2.5 ${meta.containerClass}`}
-            >
+            {/* Comps (or the per-band empty state). */}
+            <div className="px-3 py-3">
               {comps.length === 0 ? (
                 <p className="px-1 text-sm text-muted-foreground">
                   Nenhuma comp {meta.label} neste patch.

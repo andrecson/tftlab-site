@@ -47,55 +47,41 @@ export function groupByTier<T extends { tier: Tier }>(
 export interface TierMeta {
   /** Human label for the band (e.g. "S Tier", "Situacional"). */
   label: string;
-  /** Small caption shown under the big letter in the tier badge. */
-  badgeSub: string;
   /** Full Tailwind class for the tier color background (badge + hex rim). */
   chipClass: string;
   /** Full Tailwind class for the tier-colored left border (never interpolated). */
   borderClass: string;
-  /** Full Tailwind class for the tier-colored row container border. */
-  containerClass: string;
 }
 
 /**
  * Per-tier presentation. Class names are written out in full (never
- * interpolated) so Tailwind's content scanner keeps `bg-tier-*`/`border-tier-*`
+ * interpolated) so Tailwind's content scanner keeps `bg-tier-*`/`border-l-tier-*`
  * in the build. `X` is the situational band.
  */
 export const TIER_META: Record<Tier, TierMeta> = {
   S: {
     label: "S Tier",
-    badgeSub: "TIER",
     chipClass: "bg-tier-s",
     borderClass: "border-l-tier-s",
-    containerClass: "border-tier-s",
   },
   A: {
     label: "A Tier",
-    badgeSub: "TIER",
     chipClass: "bg-tier-a",
     borderClass: "border-l-tier-a",
-    containerClass: "border-tier-a",
   },
   B: {
     label: "B Tier",
-    badgeSub: "TIER",
     chipClass: "bg-tier-b",
     borderClass: "border-l-tier-b",
-    containerClass: "border-tier-b",
   },
   C: {
     label: "C Tier",
-    badgeSub: "TIER",
     chipClass: "bg-tier-c",
     borderClass: "border-l-tier-c",
-    containerClass: "border-tier-c",
   },
   X: {
     label: "X Tier",
-    badgeSub: "TIER",
     chipClass: "bg-tier-x",
     borderClass: "border-l-tier-x",
-    containerClass: "border-tier-x",
   },
 };
