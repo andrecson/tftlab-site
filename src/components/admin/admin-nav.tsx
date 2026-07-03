@@ -15,6 +15,7 @@ const ADMIN_LINKS = [
   { href: "/admin/tier-list", label: "Tier list", exact: false },
   { href: "/admin/catalog", label: "Catálogo", exact: false },
   { href: "/admin/patches", label: "Patches", exact: false },
+  { href: "/admin/assinantes", label: "Assinantes", exact: false },
 ] as const;
 
 export function AdminNav() {
