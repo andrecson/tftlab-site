@@ -18,6 +18,9 @@ RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Git doesn't track empty dirs, so public/ may be absent; ensure it exists so the
+# runner's `COPY /app/public` never fails.
+RUN mkdir -p public
 
 # NEXT_PUBLIC_* are inlined at build time → passed as build args.
 ARG NEXT_PUBLIC_SITE_URL
