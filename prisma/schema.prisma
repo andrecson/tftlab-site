@@ -55,6 +55,8 @@ model Item {
   name           String
   iconUrl        String
   type           ItemType
+  // Curator-hidden: excluded from the builder item panel (bad API rows).
+  hidden         Boolean            @default(false)
   set            String
   compUnitItems  CompUnitItem[]
   itemPriorities CompItemPriority[]

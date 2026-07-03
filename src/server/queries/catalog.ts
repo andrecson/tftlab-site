@@ -153,7 +153,7 @@ export async function getBuilderTraits(
  *  - Champion loot tokens ("2-star 1-cost: Veigar", "3-star Illaoi").
  *  - Untranslated placeholder keys ("TFT_item_name_Yuumi").
  */
-function isEquippableItem(item: { apiId: string; name: string }): boolean {
+export function isEquippableItem(item: { apiId: string; name: string }): boolean {
   if (item.apiId.includes("ChampionItem")) return false;
   if (/cost:/i.test(item.name)) return false;
   if (/^\d+-star\b/i.test(item.name)) return false;
@@ -186,7 +186,7 @@ export async function getBuilderItems(set?: string): Promise<BuilderItem[]> {
   if (!resolvedSet) return [];
 
   const items = await db.item.findMany({
-    where: { set: resolvedSet },
+    where: { set: resolvedSet, hidden: false },
     orderBy: { name: "asc" },
     select: { id: true, apiId: true, name: true, iconUrl: true, type: true },
   });
@@ -212,6 +212,51 @@ export async function getBuilderItems(set?: string): Promise<BuilderItem[]> {
       iconUrl: item.iconUrl,
       type: item.type,
     }));
+}
+
+/** A catalog item as shown in the admin item editor (every fixable field). */
+export interface AdminItem {
+  id: string;
+  apiId: string;
+  name: string;
+  iconUrl: string;
+  type: ItemType;
+  set: string;
+  /** Curator flag: hidden from the builder item panel. */
+  hidden: boolean;
+  /** false = a champion-token / placeholder the builder heuristic also drops. */
+  equippable: boolean;
+}
+
+/**
+ * Every item of the current set for the admin item editor — UNFILTERED and NOT
+ * deduped (unlike `getBuilderItems`), so a curator can find and fix bad rows the
+ * API import produced (wrong name/icon/type, junk tokens). NOT `unstable_cache`'d
+ * — the admin shell is force-dynamic. `visibleInBuilder` flags what the builder
+ * would hide, so the curator knows which rows actually surface there.
+ */
+export async function getAdminItems(set?: string): Promise<AdminItem[]> {
+  const resolvedSet = set ?? (await getCurrentSet());
+  if (!resolvedSet) return [];
+
+  const items = await db.item.findMany({
+    where: { set: resolvedSet },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      apiId: true,
+      name: true,
+      iconUrl: true,
+      type: true,
+      set: true,
+      hidden: true,
+    },
+  });
+
+  return items.map((item) => ({
+    ...item,
+    equippable: isEquippableItem(item),
+  }));
 }
 
 /**

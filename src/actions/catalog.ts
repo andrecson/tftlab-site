@@ -1,5 +1,6 @@
 "use server";
 
+import type { ItemType } from "@prisma/client";
 import { revalidateTag } from "next/cache";
 
 import { requireRole } from "@/auth";
@@ -7,6 +8,55 @@ import {
   importCatalog,
   type CatalogImportResult,
 } from "@/server/catalog-import";
+import { db } from "@/server/db";
+
+const ITEM_TYPES: readonly ItemType[] = [
+  "COMPONENT",
+  "COMPLETED",
+  "ARTIFACT",
+  "RADIANT",
+  "EMBLEM",
+  "SUPPORT",
+  "OTHER",
+];
+
+export type ItemActionResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Admin action: fix a single catalog item that the API import got wrong (name,
+ * icon or category). `requireRole("EDITOR")` gates it; a "use server" fn is a
+ * public POST, so every field is validated at this trust boundary. On success
+ * `revalidateTag("catalog")` refreshes the builder's item list.
+ */
+export async function updateItem(
+  id: string,
+  input: { name: string; iconUrl: string; type: ItemType; hidden: boolean },
+): Promise<ItemActionResult> {
+  await requireRole("EDITOR");
+
+  const name = typeof input.name === "string" ? input.name.trim() : "";
+  const iconUrl = typeof input.iconUrl === "string" ? input.iconUrl.trim() : "";
+  if (!name) return { ok: false, error: "O nome não pode ficar vazio." };
+  if (name.length > 120) return { ok: false, error: "Nome muito longo (máx. 120)." };
+  if (!/^https?:\/\/.+/i.test(iconUrl)) {
+    return { ok: false, error: "URL do ícone inválida (use http(s)://…)." };
+  }
+  if (!ITEM_TYPES.includes(input.type)) {
+    return { ok: false, error: "Categoria de item inválida." };
+  }
+
+  try {
+    await db.item.update({
+      where: { id },
+      data: { name, iconUrl, type: input.type, hidden: Boolean(input.hidden) },
+    });
+  } catch {
+    return { ok: false, error: "Item não encontrado." };
+  }
+
+  revalidateTag("catalog");
+  return { ok: true };
+}
 
 export type ReimportResult =
   | { ok: true; result: CatalogImportResult }

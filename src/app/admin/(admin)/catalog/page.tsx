@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ItemType } from "@prisma/client";
 
 import { CatalogExplorer } from "@/components/admin/catalog-explorer";
@@ -68,6 +69,13 @@ export default async function AdminCatalogPage() {
           Busque e selecione campeões, itens, traits e augments do set atual. O
           mesmo seletor é reutilizado nos formulários de composição.
         </p>
+        <Link
+          href="/admin/catalog/itens"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:text-primary"
+        >
+          Editar itens (corrigir nome, ícone ou categoria)
+          <span aria-hidden="true">→</span>
+        </Link>
       </div>
 
       <CatalogExplorer
