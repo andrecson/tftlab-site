@@ -40,16 +40,17 @@ cp .env.example .env
 docker compose build
 docker compose up -d
 ```
-- O **site** roda `prisma migrate deploy` no start; **popule o catálogo/usuários**
-  uma vez:
+- O **site** roda `prisma migrate deploy` no start (aplica as migrations sozinho).
+- Crie os **usuários** admin/curador (uma vez):
   ```bash
-  docker compose exec site node_modules/.bin/prisma db seed
+  docker compose exec site node prisma/seed-users.cjs
   ```
-  (ou importe o catálogo pelo admin depois de logar)
+- Depois **logue no admin** (`/admin/login`) e clique em **“Re-importar catálogo”**
+  pra popular campeões/itens/traits/augments do patch atual.
 
 ## 5. Emitir o SSL
 ```bash
-./init-ssl.sh          # emite o cert (apex + www) e religa o nginx com HTTPS
+./init-ssl.sh          # emite o cert (tftlab.com.br + www + app) e liga o HTTPS
 ```
 
 ## 6. Ligar pagamento + Discord (nos painéis)
