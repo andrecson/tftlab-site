@@ -138,10 +138,17 @@ export async function importCatalog(
   // and returns empty when it's unset. Only for the live channel; a PBE (preview)
   // import must not flip the live set out from under the site.
   if (channel === "latest") {
+    const existing = await db.siteConfig.findUnique({
+      where: { id: 1 },
+      select: { currentSet: true },
+    });
+    // On a SET change, clear the stale current patch (it belonged to the old
+    // set) so the admin is prompted to pick a fresh one instead of showing it.
+    const setChanged = existing != null && existing.currentSet !== set;
     await db.siteConfig.upsert({
       where: { id: 1 },
       create: { id: 1, currentSet: set },
-      update: { currentSet: set },
+      update: { currentSet: set, ...(setChanged ? { currentPatchId: null } : {}) },
     });
   }
 

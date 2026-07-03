@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { CompStatus } from "@prisma/client";
 import {
   archiveComp,
+  deleteComp,
   publishComp,
   unpublishComp,
   type CompActionResult,
@@ -73,6 +74,27 @@ export function CompStatusControls({ comp }: CompStatusControlsProps) {
     // Refresh the force-dynamic admin page so any sibling server reads (e.g. the
     // form's initial values) reflect the new status on next navigation.
     router.refresh();
+  }
+
+  async function handleDelete() {
+    if (
+      !window.confirm(
+        "Excluir esta comp permanentemente? Isso apaga a comp e tudo dela (unidades, itens, board, sinergias). Não dá para desfazer.",
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setNotice(null);
+    setPending("delete");
+    const result = await deleteComp(comp.id);
+    if (!result.ok) {
+      setPending(null);
+      setError(result.error);
+      return;
+    }
+    // The comp no longer exists — leave the edit page.
+    router.push("/admin/comps");
   }
 
   const meta = STATUS_META[status];
@@ -163,6 +185,20 @@ export function CompStatusControls({ comp }: CompStatusControlsProps) {
             {pending === "archive" ? "Arquivando…" : "Arquivar"}
           </button>
         )}
+      </div>
+
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-3">
+        <p className="text-xs text-muted-foreground">
+          Excluir remove a comp e todos os dados dela permanentemente.
+        </p>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={busy}
+          className="shrink-0 rounded-md border border-destructive/40 px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {pending === "delete" ? "Excluindo…" : "Excluir comp"}
+        </button>
       </div>
 
       {error ? (

@@ -710,3 +710,23 @@ export async function archiveComp(id: string): Promise<CompActionResult> {
   revalidateComp(comp.slug);
   return { ok: true, id, slug: comp.slug };
 }
+
+/**
+ * Hard-delete a comp and every dependent row (traits, units, items, carries,
+ * augments, tier snapshots — all `onDelete: Cascade`). Irreversible; unlike
+ * `archiveComp` (which just flips status), the comp is gone for good.
+ */
+export async function deleteComp(id: string): Promise<CompActionResult> {
+  await requireRole("EDITOR");
+
+  const comp = await db.comp.findUnique({
+    where: { id },
+    select: { id: true, slug: true },
+  });
+  if (!comp) return { ok: false, error: "Comp não encontrada." };
+
+  await db.comp.delete({ where: { id } });
+
+  revalidateComp(comp.slug);
+  return { ok: true, id, slug: comp.slug };
+}

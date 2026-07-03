@@ -135,6 +135,8 @@ interface RawSet {
   mutator?: string;
   champions?: RawChampion[];
   traits?: RawTrait[];
+  /** apiIds of the augments in THIS set's pool (reused across sets). */
+  augments?: string[];
 }
 
 interface RawTftData {
@@ -187,6 +189,12 @@ function augmentTier(apiName: string): string | null {
   if (/(_II|_2)$|Gold/i.test(apiName)) return "Gold";
   if (/(_I|_1)$|Silver/i.test(apiName)) return "Silver";
   return null;
+}
+
+/** Augment display names sometimes carry inline HTML ("All Done<br><tftitemrules>…");
+ * keep just the leading human-readable label. */
+function cleanAugmentName(name: string): string {
+  return name.split("<")[0].trim();
 }
 
 function dedupeByApiId<T extends { apiId: string }>(rows: T[]): T[] {
@@ -280,22 +288,32 @@ export async function getCatalog(opts?: {
     })),
   );
 
+  // The set lists its OWN augment pool (`set.augments`), reused across sets so
+  // the prefixes vary (Set 17 includes TFT10_/TFT_ augments). Use that list as
+  // the source of truth and resolve each apiId to its item (name + icon), rather
+  // than guessing by `${setToken}_` prefix — which dropped ~80% of the pool.
+  const itemByApiId = new Map<string, RawItem>();
+  for (const i of data.items ?? []) {
+    if (hasText(i.apiName)) itemByApiId.set(i.apiName!, i);
+  }
   const augments: CatalogAugment[] = dedupeByApiId(
-    (data.items ?? [])
+    (set.augments ?? [])
       .filter(
-        (i) =>
-          hasText(i.apiName) &&
-          hasText(i.name) &&
-          i.apiName!.startsWith(`${setToken}_`) &&
-          /Augment/i.test(i.apiName!) &&
-          !/Debug|Test|Placeholder|UNUSED/i.test(i.apiName!),
+        (id) => hasText(id) && !/Debug|Test|Placeholder|UNUSED/i.test(id),
       )
-      .map((i) => ({
-        apiId: i.apiName!,
-        name: i.name!.trim(),
-        iconUrl: toAsset(i.icon),
-        tier: augmentTier(i.apiName!),
-      })),
+      .map((id) => {
+        const item = itemByApiId.get(id);
+        const name =
+          item && hasText(item.name) ? cleanAugmentName(item.name) : "";
+        if (!name) return null;
+        return {
+          apiId: id,
+          name,
+          iconUrl: toAsset(item!.icon),
+          tier: augmentTier(id),
+        };
+      })
+      .filter((a): a is CatalogAugment => a !== null),
   );
 
   return {
