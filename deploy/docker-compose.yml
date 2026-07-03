@@ -90,10 +90,12 @@ services:
   nginx:
     image: nginx:alpine
     restart: unless-stopped
-    # Reload every 12h so renewed certs (from the certbot service) are picked up
-    # without a manual restart. The image entrypoint still runs
-    # /docker-entrypoint.d/* (enable-ssl.sh) before this command.
-    command: ["/bin/sh", "-c", "while :; do sleep 12h; nginx -s reload; done & nginx -g 'daemon off;'"]
+    # Custom command: (1) enable HTTPS if the cert exists, (2) reload every 12h so
+    # renewed certs are picked up. IMPORTANT: the nginx image only runs
+    # /docker-entrypoint.d/* (incl. enable-ssl.sh) when the command STARTS WITH
+    # "nginx" — since ours doesn't, we must run enable-ssl.sh ourselves here, or
+    # HTTPS never gets enabled.
+    command: ["/bin/sh", "-c", "sh /docker-entrypoint.d/40-enable-ssl.sh; while :; do sleep 12h; nginx -s reload; done & nginx -g 'daemon off;'"]
     ports:
       - "80:80"
       - "443:443"
