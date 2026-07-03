@@ -50,6 +50,10 @@ RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+# Next standalone binds to $HOSTNAME; Docker defaults it to the container id, so
+# it would listen only on that interface. Force 0.0.0.0 so nginx (and loopback)
+# can reach it.
+ENV HOSTNAME=0.0.0.0
 
 # Standalone server bundle + static assets + public.
 COPY --from=builder /app/.next/standalone ./
