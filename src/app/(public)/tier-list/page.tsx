@@ -53,7 +53,7 @@ export default async function TierListPage() {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <PageHeading
         title="Tier List"
-        subtitle="As comps mais fortes do patch, ranqueadas por força."
+        subtitle="As comps mais fortes do patch."
       />
 
       <TierBands groups={groupByTier(comps)} currentPatchId={currentPatchId} />

@@ -23,9 +23,11 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           {/* Brand + pitch + social */}
           <div className="md:col-span-2">
-            <Link href="/" className="text-2xl font-black italic tracking-tight">
-              <span className="text-primary">TFTLab</span>
-              <span className="text-primary/50">.br</span>
+            <Link
+              href="/"
+              className="text-2xl font-black italic tracking-tight text-primary"
+            >
+              TFTLab<span>.br</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
               Sua plataforma para evoluir no Teamfight Tactics: aprenda com os
