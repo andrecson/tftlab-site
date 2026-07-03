@@ -8,7 +8,7 @@
 #   /opt/tftlab/deploy/     <- this folder (docker-compose.yml, nginx/, .env)
 #
 # Domain (set in .env): tftlab.com.br -> site. The provider webhooks point at
-# https://tftlab.com.br/api/webhooks/{stripe,mercadopago}.
+# https://app.tftlab.com.br/api/webhooks/{stripe,mercadopago}.
 
 services:
   # --- Site (Next.js) --------------------------------------------------------
@@ -52,7 +52,7 @@ services:
       CURATOR_EMAIL: ${CURATOR_EMAIL}
       CURATOR_PASSWORD: ${CURATOR_PASSWORD}
       # Payments → Discord subscriber role (webhooks live on the site now, at
-      # https://tftlab.com.br/api/webhooks/{stripe,mercadopago}). Runtime-only
+      # https://app.tftlab.com.br/api/webhooks/{stripe,mercadopago}). Runtime-only
       # secrets (the NEXT_PUBLIC_* payment links are build args above).
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}

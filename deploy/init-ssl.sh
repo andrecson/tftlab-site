@@ -15,11 +15,11 @@ echo "==> Starting nginx (HTTP only)…"
 docker compose up -d nginx
 sleep 4
 
-echo "==> Requesting certificate for tftlab.com.br (+ www)…"
+echo "==> Requesting certificate for tftlab.com.br (+ www + app)…"
 docker compose run --rm --entrypoint certbot certbot certonly \
   --webroot -w /var/www/certbot \
   --email "$SSL_EMAIL" --agree-tos --no-eff-email \
-  -d tftlab.com.br -d www.tftlab.com.br
+  -d tftlab.com.br -d www.tftlab.com.br -d app.tftlab.com.br
 
 echo "==> Restarting nginx with HTTPS…"
 docker compose restart nginx

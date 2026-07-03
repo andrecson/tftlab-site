@@ -12,11 +12,13 @@ por `deploy/docker-compose.yml`.
 - Acesso ao **DNS** de `tftlab.com.br` (na Hostinger)
 
 ## 1. DNS (na Hostinger)
-Aponte para o IP da VPS:
+Aponte para o IP da VPS (3 registros):
 - `A  @      <IP_DA_VPS>`   (tftlab.com.br)
 - `A  www    <IP_DA_VPS>`
+- `A  app    <IP_DA_VPS>`   (app.tftlab.com.br — usado pelos webhooks)
 
-> ⚠️ Isso troca o site atual pelo novo. Faça quando for realmente ao ar.
+> ⚠️ Isso **troca o site atual** pelo novo em `tftlab.com.br`. Faça backup/anote
+> a config do site atual ANTES, e só mexa quando for realmente ao ar.
 
 ## 2. Clonar o repositório
 ```bash
