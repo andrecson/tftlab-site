@@ -48,6 +48,12 @@ export default async function AdminSubscribersPage() {
 
   // Overview counts (computed server-side from the full, unfiltered list).
   const activeCount = subscribers.filter((s) => s.status === "ACTIVE").length;
+  const activeStripe = subscribers.filter(
+    (s) => s.status === "ACTIVE" && s.provider === "STRIPE",
+  ).length;
+  const activeMp = subscribers.filter(
+    (s) => s.status === "ACTIVE" && s.provider === "MERCADOPAGO",
+  ).length;
   const pendingCount = subscribers.filter((s) => s.status === "PENDING").length;
   const inactiveCount = subscribers.filter(
     (s) => s.status === "EXPIRED" || s.status === "CANCELED",
@@ -69,8 +75,10 @@ export default async function AdminSubscribersPage() {
       </div>
 
       {/* Overview */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatTile label="Assinantes ativos" value={activeCount} emphasis />
+        <StatTile label="Ativos Stripe" value={activeStripe} />
+        <StatTile label="Ativos Mercado Pago" value={activeMp} />
         <StatTile label="Aguardando" value={pendingCount} />
         <StatTile label="Inativos" value={inactiveCount} />
         <StatTile label="Total" value={subscribers.length} />

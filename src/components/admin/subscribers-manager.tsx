@@ -82,6 +82,8 @@ export function SubscribersManager({
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<SubscriberStatus | "">("");
+  const [planFilter, setPlanFilter] = useState<"" | "month" | "year">("");
+  const [providerFilter, setProviderFilter] = useState<"" | PaymentProvider>("");
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -99,6 +101,8 @@ export function SubscribersManager({
     const q = query.trim().toLowerCase();
     return subscribers.filter((s) => {
       if (statusFilter && s.status !== statusFilter) return false;
+      if (planFilter && s.plan !== planFilter) return false;
+      if (providerFilter && s.provider !== providerFilter) return false;
       if (!q) return true;
       return (
         s.discordId.includes(q) ||
@@ -106,7 +110,7 @@ export function SubscribersManager({
         (s.email ?? "").toLowerCase().includes(q)
       );
     });
-  }, [subscribers, query, statusFilter]);
+  }, [subscribers, query, statusFilter, planFilter, providerFilter]);
 
   async function run(
     key: string,
@@ -246,6 +250,30 @@ export function SubscribersManager({
               {STATUS_META[s].label}
             </option>
           ))}
+        </select>
+        <select
+          value={planFilter}
+          onChange={(e) =>
+            setPlanFilter(e.target.value as "" | "month" | "year")
+          }
+          aria-label="Filtrar por plano"
+          className={inputClass}
+        >
+          <option value="">Todos os planos</option>
+          <option value="month">Mensal</option>
+          <option value="year">Anual</option>
+        </select>
+        <select
+          value={providerFilter}
+          onChange={(e) =>
+            setProviderFilter(e.target.value as "" | PaymentProvider)
+          }
+          aria-label="Filtrar por pagamento"
+          className={inputClass}
+        >
+          <option value="">Todos os pagamentos</option>
+          <option value="STRIPE">Stripe</option>
+          <option value="MERCADOPAGO">Mercado Pago</option>
         </select>
         <span className="text-sm text-muted-foreground">
           {filtered.length} de {subscribers.length}
