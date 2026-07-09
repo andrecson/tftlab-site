@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Pencil } from "lucide-react";
 import type { PaymentProvider, SubscriberStatus } from "@prisma/client";
 
 import {
   deleteSubscriber,
   grantByDiscordId,
   grantSubscriber,
+  renameSubscriber,
   revokeSubscriber,
   sendTestEmailAction,
   setSubscriberExpiry,
@@ -39,15 +41,43 @@ const STATUSES: SubscriberStatus[] = ["ACTIVE", "PENDING", "EXPIRED", "CANCELED"
 const inputClass =
   "rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground";
 
+/** Stable pt-BR DD/MM/YYYY (UTC parts, no locale/timezone drift on hydration). */
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("pt-BR");
+  const d = new Date(iso);
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${day}/${month}/${d.getUTCFullYear()}`;
+}
+
+/**
+ * Human-friendly pt-BR elapsed time from `fromIso` to `nowIso` (e.g. "3 meses",
+ * "1 ano e 2 meses"). `nowIso` is a fixed server timestamp so the string is
+ * identical on the server render and after hydration (no mismatch).
+ */
+function formatTenure(fromIso: string, nowIso: string): string {
+  const from = new Date(fromIso).getTime();
+  const now = new Date(nowIso).getTime();
+  const days = Math.max(0, Math.floor((now - from) / 86_400_000));
+  if (days < 1) return "hoje";
+  if (days === 1) return "1 dia";
+  if (days < 45) return `${days} dias`;
+  const months = Math.round(days / 30.44);
+  if (months < 12) return `${months} ${months === 1 ? "mês" : "meses"}`;
+  const years = Math.floor(days / 365.25);
+  const remMonths = Math.round((days - years * 365.25) / 30.44);
+  const y = `${years} ${years === 1 ? "ano" : "anos"}`;
+  return remMonths <= 0
+    ? y
+    : `${y} e ${remMonths} ${remMonths === 1 ? "mês" : "meses"}`;
 }
 
 export function SubscribersManager({
   subscribers,
+  now,
 }: {
   subscribers: AdminSubscriber[];
+  now: string;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -61,6 +91,9 @@ export function SubscribersManager({
   const [newPlan, setNewPlan] = useState("month");
   // SMTP test form.
   const [testEmail, setTestEmail] = useState("");
+  // Inline name editing.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -91,6 +124,20 @@ export function SubscribersManager({
     }
     setNotice(okMessage);
     router.refresh();
+  }
+
+  function startEdit(s: AdminSubscriber) {
+    setEditingId(s.id);
+    setEditValue(s.discordUsername ?? "");
+    setError(null);
+    setNotice(null);
+  }
+
+  function saveEdit(id: string) {
+    const name = editValue;
+    void run(id, () => renameSubscriber(id, name), "Nome atualizado.").then(() =>
+      setEditingId(null),
+    );
   }
 
   return (
@@ -234,15 +281,68 @@ export function SubscribersManager({
                 className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-md border border-border bg-card p-3"
               >
                 <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
-                  <p className="truncate font-medium text-foreground">
-                    {s.discordUsername || "(sem nome)"}
-                    <span className="ml-2 font-mono text-xs text-muted-foreground/70">
-                      {s.discordId}
-                    </span>
-                  </p>
+                  {editingId === s.id ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        autoFocus
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            saveEdit(s.id);
+                          } else if (e.key === "Escape") {
+                            setEditingId(null);
+                          }
+                        }}
+                        maxLength={80}
+                        placeholder="Nome do assinante"
+                        aria-label={`Nome de ${s.discordId}`}
+                        className={`w-48 ${inputClass} placeholder:text-muted-foreground`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => saveEdit(s.id)}
+                        disabled={pending !== null}
+                        className="rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Salvar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="flex items-center gap-1.5 font-medium text-foreground">
+                      <span className="truncate">
+                        {s.discordUsername || "(sem nome)"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(s)}
+                        aria-label={`Editar nome de ${s.discordId}`}
+                        title="Editar nome"
+                        className="shrink-0 text-muted-foreground/60 transition-colors hover:text-primary"
+                      >
+                        <Pencil size={13} aria-hidden />
+                      </button>
+                      <span className="ml-1 truncate font-mono text-xs text-muted-foreground/70">
+                        {s.discordId}
+                      </span>
+                    </p>
+                  )}
                   <p className="truncate text-xs text-muted-foreground">
                     {s.email || "sem email"} · {PLAN_LABEL[s.plan] ?? s.plan}
                     {s.provider ? ` · ${PROVIDER_LABEL[s.provider]}` : " · manual"}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground/80">
+                    {s.status === "ACTIVE"
+                      ? `Ativo há ${formatTenure(s.createdAt, now)}`
+                      : `Assinante desde ${fmtDate(s.createdAt)}`}
                   </p>
                 </div>
 
