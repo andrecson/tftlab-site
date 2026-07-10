@@ -38,6 +38,8 @@ services:
         NEXT_PUBLIC_STRIPE_LINK_YEAR: ${NEXT_PUBLIC_STRIPE_LINK_YEAR:-}
         NEXT_PUBLIC_MP_LINK_MONTH: ${NEXT_PUBLIC_MP_LINK_MONTH:-}
         NEXT_PUBLIC_MP_LINK_YEAR: ${NEXT_PUBLIC_MP_LINK_YEAR:-}
+        # Frontend public key for MP Checkout Bricks (card tokenization).
+        NEXT_PUBLIC_MP_PUBLIC_KEY: ${NEXT_PUBLIC_MP_PUBLIC_KEY:-}
     restart: unless-stopped
     depends_on:
       site-db:

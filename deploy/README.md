@@ -55,17 +55,21 @@ docker compose up -d
 
 ## 6. Ligar pagamento + Discord (nos painéis)
 - **Discord** (discord.com/developers): OAuth2 → Redirect
-  `https://tftlab.com.br/api/discord/callback`; bot com permissão **Manage
+  `https://tftlab.com.br/api/auth/callback/discord`; bot com permissão **Manage
   Roles**, e o cargo do bot **acima** do cargo de assinante.
-- **Stripe** → Webhooks → `https://tftlab.com.br/api/webhooks/stripe`
-  (eventos `checkout.session.completed`, `invoice.paid`,
-  `customer.subscription.updated|deleted`).
-- **Mercado Pago** → notificações → `https://tftlab.com.br/api/webhooks/mercadopago`
-- Confirme que os **Payment Links** (Stripe/MP) estão ativos e batem com os planos.
+- **Mercado Pago** → webhook `https://app.tftlab.com.br/api/webhooks/mercadopago`
+  com os tópicos **Pagamentos**, **Assinaturas** (`subscription_preapproval`) e
+  **Pagamentos de assinatura** (`subscription_authorized_payment`). O checkout de
+  **cartão** exige `NEXT_PUBLIC_MP_PUBLIC_KEY` no `.env` (é build arg).
+- **Stripe** (grandfather): mantenha o webhook
+  `https://app.tftlab.com.br/api/webhooks/stripe` ativo pros assinantes atuais
+  (`checkout.session.completed`, `invoice.paid`,
+  `customer.subscription.updated|deleted`). Nenhuma assinatura Stripe nova é criada.
 
 ## 7. Conferir
 - `https://tftlab.com.br` (site, HTTPS válido)
-- Fluxo: `/planos` → vincular Discord → pagar (Pix/cartão) → cargo concedido
+- Fluxo: `/planos` → `/checkout` → pagar (Pix/cartão) → cargo concedido (o
+  convidado vincula o Discord depois, em `/checkout/sucesso`)
 - O cron de expiração roda sozinho (serviço `cron`, de hora em hora).
 
 ## Atualizações
