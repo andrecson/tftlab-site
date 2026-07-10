@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useState } from "react";
 
 /**
@@ -26,6 +27,10 @@ function isActive(pathname: string, href: string): boolean {
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { data: session } = useSession();
+  const isCustomer = Boolean(session?.user?.discordId);
+  const accountHref = isCustomer ? "/conta" : "/entrar";
+  const accountLabel = isCustomer ? "Minha conta" : "Entrar";
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
@@ -57,7 +62,13 @@ export function SiteHeader() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <Link
+            href={accountHref}
+            className="hidden text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary md:inline-flex"
+          >
+            {accountLabel}
+          </Link>
           <Link
             href="/planos"
             className="hidden rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wide text-primary-foreground transition-opacity hover:opacity-90 md:inline-flex"
@@ -105,9 +116,16 @@ export function SiteHeader() {
               </Link>
             ))}
             <Link
+              href={accountHref}
+              onClick={() => setOpen(false)}
+              className="mt-2 rounded-md border border-border px-3 py-2.5 text-center text-sm font-bold uppercase tracking-wide text-foreground hover:border-primary/50"
+            >
+              {accountLabel}
+            </Link>
+            <Link
               href="/planos"
               onClick={() => setOpen(false)}
-              className="mt-2 rounded-md bg-primary px-3 py-2.5 text-center text-sm font-bold uppercase tracking-wide text-primary-foreground"
+              className="rounded-md bg-primary px-3 py-2.5 text-center text-sm font-bold uppercase tracking-wide text-primary-foreground"
             >
               Entrar no Lab
             </Link>
