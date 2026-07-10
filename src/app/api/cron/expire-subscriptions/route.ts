@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { expireLapsedSubscribers } from "@/server/subscriptions";
+import {
+  expireLapsedSubscribers,
+  sendRenewalReminders,
+} from "@/server/subscriptions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +20,8 @@ async function handle(req: NextRequest) {
     return new NextResponse("unauthorized", { status: 401 });
   }
   const expired = await expireLapsedSubscribers();
-  return NextResponse.json({ expired });
+  const reminded = await sendRenewalReminders();
+  return NextResponse.json({ expired, reminded });
 }
 
 export const GET = handle;

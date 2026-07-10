@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { test } from "node:test";
 
-import { verifyMpSignature } from "./mercadopago";
+import { planAutoRecurring, verifyMpSignature } from "./mercadopago";
 
 const SECRET = "mp_test_secret";
 
@@ -41,4 +41,22 @@ test("verifyMpSignature rejects missing pieces", () => {
   assert.equal(verifyMpSignature("ts=1,v1=x", "r", null, SECRET), false);
   assert.equal(verifyMpSignature("v1=x", "r", "1", SECRET), false); // no ts
   assert.equal(verifyMpSignature("ts=1", "r", "1", SECRET), false); // no v1
+});
+
+test("planAutoRecurring: monthly charges every 1 month", () => {
+  assert.deepEqual(planAutoRecurring("month", 80), {
+    frequency: 1,
+    frequency_type: "months",
+    transaction_amount: 80,
+    currency_id: "BRL",
+  });
+});
+
+test("planAutoRecurring: yearly charges every 12 months (MP has no 'years')", () => {
+  assert.deepEqual(planAutoRecurring("year", 480), {
+    frequency: 12,
+    frequency_type: "months",
+    transaction_amount: 480,
+    currency_id: "BRL",
+  });
 });

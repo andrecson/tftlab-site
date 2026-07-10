@@ -384,6 +384,14 @@ enum PaymentProvider {
   MERCADOPAGO
 }
 
+/// How the buyer is paying. PIX = one-time Pix (avulso); CARD = recurring card
+/// subscription (MP preapproval); PIX_AUTOMATICO = recurring Pix (Fase 2).
+enum PaymentMethod {
+  PIX
+  CARD
+  PIX_AUTOMATICO
+}
+
 enum SubscriberStatus {
   PENDING // Discord linked, awaiting payment confirmation
   ACTIVE // paid + role granted, within the access window
@@ -407,8 +415,18 @@ model Subscriber {
   // Stripe linkage (recurring).
   stripeCustomerId     String? @unique
   stripeSubscriptionId String? @unique
-  // Mercado Pago linkage (last approved one-time payment).
+  // Mercado Pago linkage. mpPaymentId = last approved one-time (Pix) payment;
+  // mpPreapprovalId = recurring subscription (card / Pix Automático).
   mpPaymentId          String? @unique
+  mpPreapprovalId      String? @unique
+  // How this subscriber is currently paying (drives renewal + cancel behavior).
+  paymentMethod        PaymentMethod?
+  // When the "your access ends soon" reminder was last sent (Pix avulso only),
+  // so the cron never emails the same cycle twice.
+  renewalRemindedAt    DateTime?
+  // When the customer canceled a recurring subscription (MP preapproval).
+  // Access stays live until currentPeriodEnd; the cron then expires + revokes.
+  canceledAt           DateTime?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -424,4 +442,38 @@ model WebhookEvent {
   createdAt DateTime        @default(now())
 
   @@unique([provider, eventId])
+}
+
+/// A payment started by a visitor who is NOT logged in with Discord yet
+/// (guest checkout). The payment is attributed via `checkoutToken` (carried in
+/// the MP external_reference and the success/link URL). Once the buyer links
+/// Discord, a real Subscriber is created/updated and this row is marked LINKED.
+/// Keeping guest state here lets Subscriber.discordId stay NOT NULL.
+enum GuestCheckoutStatus {
+  PENDING // created, awaiting payment
+  PAID    // paid, awaiting the Discord link
+  LINKED  // Discord linked; a Subscriber now owns the entitlement
+  EXPIRED // abandoned / never paid
+}
+
+model GuestCheckout {
+  id            String              @id @default(cuid())
+  checkoutToken String              @unique
+  // "month" | "year" — mirrors the plan interval chosen.
+  plan          String
+  method        PaymentMethod
+  status        GuestCheckoutStatus @default(PENDING)
+  email         String?
+  // Charged amount in whole BRL (mirrors the one-time price convention).
+  amountBRL     Int?
+  // MP linkage for the guest payment.
+  mpPaymentId     String? @unique
+  mpPreapprovalId String? @unique
+  paidAt          DateTime?
+  // Set once linked, for audit (which subscriber consumed this checkout).
+  subscriberId    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
 }

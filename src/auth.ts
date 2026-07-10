@@ -1,9 +1,11 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Discord from "next-auth/providers/discord";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import type { UserRole } from "@prisma/client";
 import { db } from "@/server/db";
+import { joinGuild } from "@/lib/discord";
 import { authConfig } from "@/auth.config";
 
 /**
@@ -52,7 +54,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
+    // Customer sign-in (PAY-001). `guilds.join` lets us add the buyer to the
+    // Discord server at login (see the signIn event below); `identify`+`email`
+    // give us the id/username/email we attribute payments to. Reuses the same
+    // DISCORD_CLIENT_ID/SECRET as the old bespoke OAuth route.
+    Discord({
+      clientId: process.env.DISCORD_CLIENT_ID,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET,
+      authorization: { params: { scope: "identify email guilds.join" } },
+    }),
   ],
+  events: {
+    // Add the customer to the Discord guild as a plain member at login (no
+    // role — the payment webhook grants the subscriber role later, PAY-002).
+    // Best-effort: a failure here must never block sign-in.
+    async signIn({ account, profile }) {
+      if (account?.provider === "discord" && profile?.id && account.access_token) {
+        try {
+          await joinGuild(String(profile.id), account.access_token);
+        } catch (err) {
+          console.error("[auth] joinGuild on sign-in failed", err);
+        }
+      }
+    },
+  },
 });
 
 /** ADMIN outranks EDITOR; a higher rank satisfies any lower requirement. */
@@ -75,4 +100,27 @@ export async function requireRole(minRole: UserRole = "EDITOR") {
     redirect("/admin/login?error=forbidden");
   }
   return session;
+}
+
+/**
+ * Server-only guard for customer routes (PAY-004). Returns the signed-in
+ * customer's Discord identity, or redirects to /entrar (preserving where they
+ * were headed) when there is no customer session. Use at the top of /conta and
+ * the authenticated checkout.
+ */
+export async function requireCustomer(callbackUrl = "/conta"): Promise<{
+  discordId: string;
+  discordUsername: string | null;
+  email: string | null;
+}> {
+  const session = await auth();
+  const discordId = session?.user?.discordId;
+  if (!discordId) {
+    redirect(`/entrar?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
+  return {
+    discordId,
+    discordUsername: session?.user?.discordUsername ?? null,
+    email: session?.user?.email ?? null,
+  };
 }

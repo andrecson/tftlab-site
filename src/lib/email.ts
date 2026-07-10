@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 
 import { createGuildInvite } from "@/lib/discord";
+import { absoluteUrl } from "@/lib/site";
 
 /**
  * SMTP email (payment confirmation). Optional: if the SMTP_* env vars are not
@@ -95,6 +96,64 @@ export async function sendPaymentConfirmationEmail(input: {
   return send({
     to: input.to,
     subject: "Pagamento confirmado! Seu acesso no TFTLab está ativo",
+    text,
+    html,
+  });
+}
+
+/**
+ * Guest fallback (PAY-015): the buyer paid without linking Discord. Emails a
+ * link (carrying the unguessable checkout token) to finish the binding.
+ */
+export async function sendGuestLinkEmail(input: {
+  to: string;
+  token: string;
+  plan: string;
+}): Promise<boolean> {
+  const planLabel = input.plan === "year" ? "anual" : "mensal";
+  const link = absoluteUrl(
+    `/checkout/sucesso?token=${encodeURIComponent(input.token)}`,
+  );
+  const text = `Recebemos seu pagamento do plano ${planLabel} no TFTLab! Falta um passo: acesse o link e entre com o Discord para liberar seu cargo de assinante.\n\n${link}`;
+  const html = shell(
+    `<p>Recebemos seu pagamento do plano <strong>${planLabel}</strong> no TFTLab!</p>
+     <p>Falta um passo: entre com o seu Discord para liberar o <strong>cargo de assinante</strong>.</p>
+     <p style="margin:24px 0"><a href="${link}" style="display:inline-block;background:#00d9d9;color:#04121a;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:8px">Liberar meu acesso</a></p>
+     <p style="font-size:13px;color:#64748b">Ou copie e cole: ${link}</p>`,
+  );
+  return send({
+    to: input.to,
+    subject: "Falta um passo: libere seu acesso no TFTLab",
+    text,
+    html,
+  });
+}
+
+/**
+ * Renewal reminder (PAY-018): sent a few days before a Pix (one-time) access
+ * window ends, since one-time payments do not auto-renew.
+ */
+export async function sendRenewalReminderEmail(input: {
+  to: string;
+  plan: string;
+  endsAt: Date;
+}): Promise<boolean> {
+  const planLabel = input.plan === "year" ? "anual" : "mensal";
+  const endsLabel = input.endsAt.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const link = absoluteUrl("/planos");
+  const text = `Seu acesso ${planLabel} no TFTLab termina em ${endsLabel}. Renove pelo Pix para não perder o cargo de assinante, as aulas e a comunidade.\n\n${link}`;
+  const html = shell(
+    `<p>Seu acesso <strong>${planLabel}</strong> no TFTLab termina em <strong>${endsLabel}</strong>.</p>
+     <p>Renove para não perder o cargo de assinante, as aulas e a comunidade.</p>
+     <p style="margin:24px 0"><a href="${link}" style="display:inline-block;background:#00d9d9;color:#04121a;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:8px">Renovar agora</a></p>`,
+  );
+  return send({
+    to: input.to,
+    subject: "Seu acesso no TFTLab está acabando",
     text,
     html,
   });

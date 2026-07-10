@@ -53,9 +53,9 @@ export default async function PlanosPage({
       <PaymentTrust />
 
       <p className="mx-auto mt-3 max-w-3xl text-center text-xs text-muted-foreground">
-        Pix ou boleto pelo Mercado Pago, ou cartão pela Stripe. Após confirmar,
-        você vincula seu Discord e recebe o cargo de assinante. Dúvidas? Fale
-        com a gente no WhatsApp.
+        Cartão (assinatura) ou Pix pelo Mercado Pago, direto no site. Após o
+        pagamento, você libera o cargo de assinante no Discord. Dúvidas? Fale com
+        a gente no WhatsApp.
       </p>
     </div>
   );
