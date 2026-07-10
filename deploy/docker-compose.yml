@@ -49,6 +49,10 @@ services:
       DATABASE_URL_UNPOOLED: postgresql://${SITE_DB_USER:-tftlab}:${SITE_DB_PASSWORD}@site-db:5432/${SITE_DB_NAME:-tftlab_site}
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_TRUST_HOST: "true"
+      # Canonical public URL for Auth.js. Without it, next-auth builds OAuth
+      # callback URLs from the container HOSTNAME (0.0.0.0:3000), so Discord
+      # rejects the redirect_uri. Pin it to the public origin.
+      AUTH_URL: ${AUTH_URL:-}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       CURATOR_EMAIL: ${CURATOR_EMAIL}
