@@ -76,6 +76,30 @@ export async function revokeSubscriber(
   return { ok: true };
 }
 
+/**
+ * Rename a subscriber's display name (stored in `discordUsername`). An empty
+ * value clears it (falls back to "(sem nome)" in the UI). Note: a future Discord
+ * re-link via a payment webhook overwrites this with the real Discord username.
+ */
+export async function renameSubscriber(
+  id: string,
+  name: string,
+): Promise<SubscriberActionResult> {
+  await requireRole("EDITOR");
+  const trimmed = (name ?? "").trim();
+  if (trimmed.length > 80) {
+    return { ok: false, error: "Nome muito longo (máx. 80 caracteres)." };
+  }
+  const sub = await db.subscriber.findUnique({ where: { id } });
+  if (!sub) return { ok: false, error: "Assinante não encontrado." };
+
+  await db.subscriber.update({
+    where: { id },
+    data: { discordUsername: trimmed || null },
+  });
+  return { ok: true };
+}
+
 /** Set the access window end (extend / shorten a subscription by date). */
 export async function setSubscriberExpiry(
   id: string,
