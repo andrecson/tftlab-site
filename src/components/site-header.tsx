@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useState } from "react";
 
 /**
@@ -27,10 +26,11 @@ function isActive(pathname: string, href: string): boolean {
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const { data: session } = useSession();
-  const isCustomer = Boolean(session?.user?.discordId);
-  const accountHref = isCustomer ? "/conta" : "/entrar";
-  const accountLabel = isCustomer ? "Minha conta" : "Entrar";
+  // Always "Minha conta" (even before linking Discord) to set it apart from the
+  // "Entrar no Lab" subscribe CTA next to it. /conta sends non-logged-in users
+  // to /entrar automatically.
+  const accountHref = "/conta";
+  const accountLabel = "Minha conta";
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">

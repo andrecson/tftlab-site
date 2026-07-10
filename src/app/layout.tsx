@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { ErrorMonitor } from "@/components/error-monitor";
@@ -65,7 +64,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={inter.variable}>
       <body>
-        <SessionProvider>{children}</SessionProvider>
+        {children}
         <AnalyticsProvider />
         <ErrorMonitor />
       </body>

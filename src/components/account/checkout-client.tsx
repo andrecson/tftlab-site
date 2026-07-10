@@ -28,7 +28,10 @@ declare global {
   }
 }
 
-type CardFormData = { token?: string };
+type CardFormData = {
+  token?: string;
+  payer?: { email?: string; identification?: { type?: string; number?: string } };
+};
 
 interface PixState {
   paymentId: string;
@@ -50,13 +53,12 @@ const ERRORS: Record<string, string> = {
 };
 
 /**
- * Transparent checkout UI (PAY-008). One e-mail field at the top feeds both
- * methods (it is the payer e-mail sent to Mercado Pago). Pix is server-driven
- * (we render the QR the API returns and poll for approval); card uses the
- * Card Payment Brick, mounted once the e-mail is set and initialized with that
- * e-mail so the Brick hides its own e-mail input (avoids a duplicate field and
- * the earlier "invalid payer_email"). The Brick container stays mounted for the
- * component's life (tabs toggle via CSS) so React never removes MP's iframes.
+ * Transparent checkout UI (PAY-008). Pix is server-driven (we render the QR the
+ * API returns and poll for approval) with our own e-mail field. Card uses the
+ * Card Payment Brick's NATIVE form — e-mail + CPF (identification, required for
+ * Brazil) + card — so nothing is hidden and the CPF always reaches MP in the
+ * token (better approval). The Brick container stays mounted for the component's
+ * life (tabs toggle via CSS) so React never removes MP's iframes.
  */
 export function CheckoutClient({
   plan,
@@ -83,7 +85,6 @@ export function CheckoutClient({
 
   const planLabel = plan === "year" ? "Anual" : "Mensal";
   const priceLabel = `R$ ${amount},00 ${plan === "year" ? "/ ano" : "/ mês"}`;
-  const hasEmail = email.trim().length > 3 && email.includes("@");
 
   const goAfterSuccess = useCallback(
     (guestToken: string | null) => {
@@ -99,11 +100,15 @@ export function CheckoutClient({
     [isLoggedIn, router],
   );
 
-  // Submit the Bricks card token to our checkout route, with the e-mail from the
-  // top field as the authoritative payer e-mail.
+  // Submit the Bricks card token (+ the e-mail the Brick collected) to checkout.
   const submitCard = useCallback(
     async (formData: CardFormData) => {
       setError(null);
+      const payerEmail = (formData.payer?.email ?? "").trim();
+      if (!payerEmail) {
+        setError(ERRORS.email);
+        throw new Error("email");
+      }
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -111,7 +116,7 @@ export function CheckoutClient({
           plan,
           method: "card",
           cardToken: formData.token,
-          email: email.trim(),
+          email: payerEmail,
         }),
       });
       const data = (await res.json()) as {
@@ -124,7 +129,7 @@ export function CheckoutClient({
       }
       goAfterSuccess(data.guestToken ?? null);
     },
-    [plan, email, goAfterSuccess],
+    [plan, goAfterSuccess],
   );
 
   // Keep the Brick's onSubmit pointing at the latest closure without remounting.
@@ -133,14 +138,14 @@ export function CheckoutClient({
     submitCardRef.current = submitCard;
   }, [submitCard]);
 
-  // Mount the card Brick once, the first time the card tab is shown with a valid
-  // e-mail + SDK ready. It is never unmounted on tab switch (CSS toggles it).
+  // Mount the card Brick once, the first time the card tab is shown + SDK ready.
+  // Never unmounted on tab switch (CSS toggles it). No payer passed, so the Brick
+  // renders its full native form (e-mail + CPF + card).
   useEffect(() => {
     if (
       method !== "card" ||
       !sdkLoaded ||
       !PUBLIC_KEY ||
-      !hasEmail ||
       !window.MercadoPago ||
       brickRef.current
     ) {
@@ -150,7 +155,7 @@ export function CheckoutClient({
     const mp = new window.MercadoPago(PUBLIC_KEY, { locale: "pt-BR" });
     mp.bricks()
       .create("cardPayment", "cardPaymentBrick_container", {
-        initialization: { amount, payer: { email: email.trim() } },
+        initialization: { amount },
         customization: { visual: { style: { theme: "dark" } } },
         callbacks: {
           onReady: () => undefined,
@@ -168,7 +173,7 @@ export function CheckoutClient({
     return () => {
       cancelled = true;
     };
-  }, [method, sdkLoaded, hasEmail, amount, email]);
+  }, [method, sdkLoaded, amount]);
 
   // Poll Pix status until approved, then advance.
   useEffect(() => {
@@ -198,7 +203,7 @@ export function CheckoutClient({
   }, [pix, goAfterSuccess]);
 
   async function generatePix() {
-    if (!hasEmail) {
+    if (email.trim().length < 4 || !email.includes("@")) {
       setError(ERRORS.email);
       return;
     }
@@ -265,19 +270,6 @@ export function CheckoutClient({
         </span>
       </div>
 
-      {/* Single e-mail field, used as the payer e-mail for both methods. */}
-      <label className="mt-6 flex flex-col gap-1 text-sm">
-        <span className="text-muted-foreground">E-mail</span>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          placeholder="voce@email.com"
-          className={inputClass}
-        />
-      </label>
-
       <div className="mt-6 flex gap-2">
         <button
           type="button"
@@ -313,16 +305,11 @@ export function CheckoutClient({
         </p>
       ) : null}
 
-      {/* CARD — container kept mounted; hidden (not unmounted) when Pix is active
-          so MP's injected DOM is never removed by React. */}
+      {/* CARD — Brick's native form (e-mail + CPF + card). Container kept mounted;
+          hidden (not unmounted) when Pix is active so MP's DOM is never removed. */}
       <div className={method === "card" ? "mt-6" : "hidden"}>
         {PUBLIC_KEY ? (
           <>
-            {!hasEmail ? (
-              <p className="rounded-md border border-border bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
-                Informe seu e-mail acima para carregar o formulário de cartão.
-              </p>
-            ) : null}
             <div id="cardPaymentBrick_container" />
             <p className="mt-3 text-xs text-muted-foreground">
               Assinatura recorrente. Seus dados de cartão vão direto ao Mercado
@@ -375,14 +362,27 @@ export function CheckoutClient({
             </p>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => void generatePix()}
-            disabled={pending}
-            className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wide text-primary-foreground shadow-[0_0_16px_hsl(var(--primary)/0.4)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {pending ? "Gerando…" : "Gerar Pix"}
-          </button>
+          <div className="flex flex-col gap-4">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">E-mail</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                placeholder="voce@email.com"
+                className={inputClass}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => void generatePix()}
+              disabled={pending}
+              className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wide text-primary-foreground shadow-[0_0_16px_hsl(var(--primary)/0.4)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pending ? "Gerando…" : "Gerar Pix"}
+            </button>
+          </div>
         )}
       </div>
     </div>
