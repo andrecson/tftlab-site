@@ -50,10 +50,15 @@ const ERRORS: Record<string, string> = {
 };
 
 /**
- * Transparent checkout UI (PAY-008). Pix is fully server-driven (we render the
- * QR the API returns and poll for approval); card uses the Mercado Pago Card
- * Payment Brick (tokenized in the browser, never sending the PAN to us). On
- * success a logged-in buyer goes to /conta; a guest goes to the link page.
+ * Transparent checkout UI (PAY-008). Pix is server-driven (we render the QR the
+ * API returns and poll for approval); card uses the Mercado Pago Card Payment
+ * Brick (tokenized in the browser, never sending the PAN to us).
+ *
+ * The Brick injects its own DOM (iframes) into `#cardPaymentBrick_container`, so
+ * that container is kept mounted for the component's whole life and tabs are
+ * toggled with CSS — never with conditional mount/unmount. Removing the Brick's
+ * node via React reconciliation throws `removeChild` and blanks the other tab.
+ * The Brick also renders its own e-mail field, so we only show ours on Pix.
  */
 export function CheckoutClient({
   plan,
@@ -72,7 +77,6 @@ export function CheckoutClient({
   );
   const [email, setEmail] = useState(initialEmail);
   const [cpf, setCpf] = useState("");
-  const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [pix, setPix] = useState<PixState | null>(null);
@@ -97,7 +101,9 @@ export function CheckoutClient({
     [isLoggedIn, router],
   );
 
-  // Submit the Bricks card token to our checkout route.
+  // Submit the Bricks card token to our checkout route. For a logged-in buyer we
+  // already know the e-mail (session); for a guest we use the one the Brick
+  // collected (formData.payer.email).
   const submitCard = useCallback(
     async (formData: CardFormData) => {
       setError(null);
@@ -109,7 +115,6 @@ export function CheckoutClient({
           method: "card",
           cardToken: formData.token,
           email: email || formData.payer?.email || undefined,
-          name: name || undefined,
         }),
       });
       const data = (await res.json()) as {
@@ -122,26 +127,29 @@ export function CheckoutClient({
       }
       goAfterSuccess(data.guestToken ?? null);
     },
-    [plan, email, name, goAfterSuccess],
+    [plan, email, goAfterSuccess],
   );
 
-  // Keep the Brick's onSubmit pointing at the latest closure without remounting
-  // the Brick on every keystroke.
+  // Keep the Brick's onSubmit pointing at the latest closure without remounting.
   const submitCardRef = useRef(submitCard);
   useEffect(() => {
     submitCardRef.current = submitCard;
   }, [submitCard]);
 
-  // Mount / unmount the card Brick with the tab + SDK availability.
+  // Mount the card Brick ONCE when the SDK is ready. The container stays in the
+  // DOM for good (tabs toggle via CSS), so React never removes MP's nodes.
   useEffect(() => {
-    if (method !== "card" || !sdkLoaded || !PUBLIC_KEY || !window.MercadoPago) {
+    if (!sdkLoaded || !PUBLIC_KEY || !window.MercadoPago || brickRef.current) {
       return;
     }
     let cancelled = false;
     const mp = new window.MercadoPago(PUBLIC_KEY, { locale: "pt-BR" });
     mp.bricks()
       .create("cardPayment", "cardPaymentBrick_container", {
-        initialization: { amount },
+        initialization: {
+          amount,
+          ...(initialEmail ? { payer: { email: initialEmail } } : {}),
+        },
         customization: { visual: { style: { theme: "dark" } } },
         callbacks: {
           onReady: () => undefined,
@@ -161,7 +169,7 @@ export function CheckoutClient({
       brickRef.current?.unmount();
       brickRef.current = null;
     };
-  }, [method, sdkLoaded, amount]);
+  }, [sdkLoaded, amount, initialEmail]);
 
   // Poll Pix status until approved, then advance.
   useEffect(() => {
@@ -191,6 +199,10 @@ export function CheckoutClient({
   }, [pix, goAfterSuccess]);
 
   async function generatePix() {
+    if (!email.trim()) {
+      setError(ERRORS.email);
+      return;
+    }
     setError(null);
     setPending(true);
     try {
@@ -202,7 +214,6 @@ export function CheckoutClient({
           method: "pix",
           email: email || undefined,
           cpf: cpf || undefined,
-          name: name || undefined,
         }),
       });
       const data = (await res.json()) as {
@@ -260,18 +271,6 @@ export function CheckoutClient({
         </span>
       </div>
 
-      <label className="mt-6 flex flex-col gap-1 text-sm">
-        <span className="text-muted-foreground">E-mail</span>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          placeholder="voce@email.com"
-          className={inputClass}
-        />
-      </label>
-
       <div className="mt-6 flex gap-2">
         <button
           type="button"
@@ -307,85 +306,96 @@ export function CheckoutClient({
         </p>
       ) : null}
 
-      {method === "card" ? (
-        <div className="mt-6">
-          {PUBLIC_KEY ? (
-            <>
-              <div id="cardPaymentBrick_container" />
-              <p className="mt-3 text-xs text-muted-foreground">
-                Assinatura recorrente. Seus dados de cartão vão direto ao Mercado
-                Pago, criptografados. Você pode cancelar quando quiser na sua
-                conta.
-              </p>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Pagamento por cartão indisponível no momento. Use o Pix.
+      {/* CARD — container kept mounted; hidden (not unmounted) when Pix is active
+          so MP's injected DOM is never removed by React. */}
+      <div className={method === "card" ? "mt-6" : "hidden"}>
+        {PUBLIC_KEY ? (
+          <>
+            <div id="cardPaymentBrick_container" />
+            <p className="mt-3 text-xs text-muted-foreground">
+              Assinatura recorrente. Seus dados de cartão vão direto ao Mercado
+              Pago, criptografados. Você pode cancelar quando quiser na sua conta.
             </p>
-          )}
-        </div>
-      ) : (
-        <div className="mt-6">
-          {pix ? (
-            <div className="flex flex-col items-center gap-4">
-              {pix.qrCodeBase64 ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`data:image/png;base64,${pix.qrCodeBase64}`}
-                  alt="QR Code do Pix"
-                  className="h-56 w-56 rounded-lg bg-white p-2"
-                />
-              ) : null}
-              {pix.qrCode ? (
-                <div className="w-full">
-                  <p className="mb-1 text-xs text-muted-foreground">
-                    Pix copia e cola
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      readOnly
-                      value={pix.qrCode}
-                      className={`${inputClass} truncate`}
-                    />
-                    <button
-                      type="button"
-                      onClick={copyPix}
-                      className="shrink-0 rounded-md bg-primary px-3 py-2 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
-                    >
-                      {copied ? "Copiado" : "Copiar"}
-                    </button>
-                  </div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Pagamento por cartão indisponível no momento. Use o Pix.
+          </p>
+        )}
+      </div>
+
+      {/* PIX */}
+      <div className={method === "pix" ? "mt-6" : "hidden"}>
+        {pix ? (
+          <div className="flex flex-col items-center gap-4">
+            {pix.qrCodeBase64 ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`data:image/png;base64,${pix.qrCodeBase64}`}
+                alt="QR Code do Pix"
+                className="h-56 w-56 rounded-lg bg-white p-2"
+              />
+            ) : null}
+            {pix.qrCode ? (
+              <div className="w-full">
+                <p className="mb-1 text-xs text-muted-foreground">
+                  Pix copia e cola
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={pix.qrCode}
+                    className={`${inputClass} truncate`}
+                  />
+                  <button
+                    type="button"
+                    onClick={copyPix}
+                    className="shrink-0 rounded-md bg-primary px-3 py-2 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                  >
+                    {copied ? "Copiado" : "Copiar"}
+                  </button>
                 </div>
-              ) : null}
-              <p className="text-center text-sm text-muted-foreground">
-                Aguardando o pagamento. Assim que cair, seu acesso é liberado
-                automaticamente.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-muted-foreground">CPF (opcional)</span>
-                <input
-                  value={cpf}
-                  onChange={(e) => setCpf(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="000.000.000-00"
-                  className={inputClass}
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => void generatePix()}
-                disabled={pending}
-                className="rounded-lg bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wide text-primary-foreground shadow-[0_0_16px_hsl(var(--primary)/0.4)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {pending ? "Gerando…" : "Gerar Pix"}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            ) : null}
+            <p className="text-center text-sm text-muted-foreground">
+              Aguardando o pagamento. Assim que cair, seu acesso é liberado
+              automaticamente.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">E-mail</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                placeholder="voce@email.com"
+                className={inputClass}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted-foreground">CPF (opcional)</span>
+              <input
+                value={cpf}
+                onChange={(e) => setCpf(e.target.value)}
+                inputMode="numeric"
+                placeholder="000.000.000-00"
+                className={inputClass}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => void generatePix()}
+              disabled={pending}
+              className="rounded-lg bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wide text-primary-foreground shadow-[0_0_16px_hsl(var(--primary)/0.4)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pending ? "Gerando…" : "Gerar Pix"}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
