@@ -298,6 +298,19 @@ do acesso acabar para renovar a tempo.
 **Descrição:** Como cliente, quero assinar por Pix recorrente (débito automático) para não
 precisar refazer o pagamento todo ciclo.
 
+> **Nota de investigação (2026-07-10):** A documentação pública do Mercado Pago ainda
+> NÃO expõe um contrato de API confirmado para o Pix Automático recorrente (o
+> `processing_mode` da Orders API é captura imediata vs. diferida, não recorrência; a doc
+> de subscriptions cita "Pix" de forma genérica, sem endpoints/fluxo de consentimento).
+> O Pix Automático (Banco Central, 2025) usa um fluxo de CONSENTIMENTO autorizado uma vez
+> no app do banco do cliente. Conclusão: a CRIAÇÃO da assinatura de Pix Automático está
+> BLOQUEADA até (a) habilitar o Pix Automático na conta MP, que libera a doc/credenciais
+> específicas, e (b) confirmar o contrato. O CICLO DE VIDA (cobranças recorrentes,
+> cancelamento, expiração) provavelmente já é coberto pelo webhook da Fase 1
+> (`subscription_preapproval` + `subscription_authorized_payment`) se o MP roteá-lo pelos
+> mesmos eventos; ajustar `handleMpPreapproval` para marcar `paymentMethod` conforme o
+> payload (hoje fixa "CARD"). Só falta o fluxo de criação + consentimento.
+
 **Critérios de aceite:**
 - [ ] Confirmar e habilitar o Pix Automático na conta do Mercado Pago; validar o contrato
       de API atual na documentação vigente.
