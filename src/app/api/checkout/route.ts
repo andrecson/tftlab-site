@@ -75,13 +75,14 @@ export async function POST(req: NextRequest) {
   let externalReference: string;
   let guestToken: string | null = null;
   if (discordId) {
+    // paymentMethod is set only when the payment is confirmed (activatePix /
+    // handleMpPreapproval), so a failed card never mislabels an existing Pix sub.
     const sub = await linkPendingSubscriber({
       discordId,
       discordUsername: session?.user?.discordUsername ?? null,
       email,
       plan,
       provider: "MERCADOPAGO",
-      paymentMethod: method === "pix" ? "PIX" : "CARD",
     });
     externalReference = sub.id;
   } else {

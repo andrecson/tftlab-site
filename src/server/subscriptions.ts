@@ -16,6 +16,12 @@ import { db } from "@/server/db";
  * idempotency. Called only from the payment/OAuth route handlers.
  */
 
+/** The later of two access-window ends — used so a transition never shortens
+ * already-paid access (e.g. Pix → Card, or re-subscribing early). */
+function laterEnd(a: Date | null | undefined, b: Date): Date {
+  return a && a > b ? a : b;
+}
+
 /**
  * Record a provider event id; returns false if it was already recorded (the
  * unique [provider, eventId] constraint). Providers retry webhooks, so callers
@@ -292,8 +298,10 @@ export async function handleMpPreapproval(input: {
           provider: "MERCADOPAGO",
           paymentMethod: "CARD",
           mpPreapprovalId: input.preapprovalId,
-          currentPeriodEnd:
+          currentPeriodEnd: laterEnd(
+            sub.currentPeriodEnd,
             input.nextPaymentDate ?? oneTimePeriodEnd(plan, input.paidAt),
+          ),
           roleGranted: granted,
           canceledAt: null,
         },
@@ -399,6 +407,12 @@ export async function linkGuestCheckoutToDiscord(input: {
   const plan: PlanInterval = guest.plan === "year" ? "year" : "month";
   const paidAt = guest.paidAt ?? new Date();
   const email = input.email ?? guest.email;
+  const existing = await db.subscriber.findUnique({
+    where: { discordId: input.discordId },
+  });
+  // Never shorten access on transition (e.g. Pix → Card, or re-subscription):
+  // keep the later of the existing window and the new one.
+  const currentPeriodEnd = laterEnd(existing?.currentPeriodEnd, oneTimePeriodEnd(plan, paidAt));
   const mpIds = {
     ...(guest.mpPaymentId ? { mpPaymentId: guest.mpPaymentId } : {}),
     ...(guest.mpPreapprovalId ? { mpPreapprovalId: guest.mpPreapprovalId } : {}),
@@ -414,7 +428,7 @@ export async function linkGuestCheckoutToDiscord(input: {
       provider: "MERCADOPAGO",
       paymentMethod: guest.method,
       status: "ACTIVE",
-      currentPeriodEnd: oneTimePeriodEnd(plan, paidAt),
+      currentPeriodEnd,
       canceledAt: null,
       ...mpIds,
     },
@@ -425,7 +439,7 @@ export async function linkGuestCheckoutToDiscord(input: {
       provider: "MERCADOPAGO",
       paymentMethod: guest.method,
       status: "ACTIVE",
-      currentPeriodEnd: oneTimePeriodEnd(plan, paidAt),
+      currentPeriodEnd,
       canceledAt: null,
       ...mpIds,
     },
